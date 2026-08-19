@@ -1,0 +1,8 @@
+{
+  "files.associations": {
+    "*.pdf": "binary"
+  },
+  "workbench.editorAssociations": {
+    "*.pdf": "default"
+  }
+}

@@ -1,0 +1,28 @@
+# LaTeX build artifacts
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.synctex(busy)
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+*.nav
+*.snm
+*.vrb
+*.xdv
+*.dvi
+*.ps
+
+# Local live preview (stable name for PDF viewer auto-reload)
+autocompile.pdf
+autocompile.synctex.gz
+
+# Default latexmk output when compiling the .tex directly (not published)
+prajwal_resume_2026_1page.pdf
