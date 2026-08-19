@@ -23,6 +23,9 @@
 # Local live preview (stable name for PDF viewer auto-reload)
 autocompile.pdf
 autocompile.synctex.gz
+autocompile_build.pdf
+autocompile_build.synctex.gz
+autocompile-version.txt
 
 # Default latexmk output when compiling the .tex directly (not published)
 prajwal_resume_2026_1page.pdf

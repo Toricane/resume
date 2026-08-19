@@ -1,0 +1,114 @@
+% Shared resume formatting (packages, layout, macros).
+% Content lives in prajwal_resume_2026_1page.tex
+
+\usepackage{latexsym}
+\usepackage[empty]{fullpage}
+\usepackage{titlesec}
+\usepackage{marvosym}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{verbatim}
+\usepackage{enumitem}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+\usepackage{calc}
+\usepackage{graphicx}
+\usepackage{xparse}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+% Adjust margins
+\addtolength{\oddsidemargin}{-0.7in}
+\addtolength{\evensidemargin}{-0.7in}
+\addtolength{\textwidth}{1.4in}
+\addtolength{\topmargin}{-.7in}
+\addtolength{\textheight}{1.4in}
+
+\urlstyle{same}
+
+\raggedbottom
+\raggedright
+\setlength{\tabcolsep}{0in}
+
+% Sections formatting
+\titleformat{\section}{
+  \vspace{-7pt}\scshape\raggedright\large
+}{}{0em}{}[\color{black}\titlerule \vspace{-6pt}]
+
+% Ensure that generate pdf is machine readable/ATS parsable
+\pdfgentounicode=1
+
+%-------------------------
+% Custom commands
+\newcommand{\resumeItem}[1]{
+  \item\small{
+    {#1 \vspace{-2pt}}
+  }
+}
+
+% Optional tech stack: \resumeSubheading[Tech]{Role}{Date}{Org}{Location}
+% Without tech:      \resumeSubheading{Role}{Date}{Org}{Location}
+\NewDocumentCommand{\resumeSubheading}{o m m m m}{%
+  \vspace{0pt}\item
+    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
+      \IfNoValueTF{#1}{%
+        \small#2%
+      }{%
+        \small#2 \small{$|$ #1}%
+      } & \small#3 \\
+      \textit{\small#4} & \textit{\small #5} \\
+    \end{tabular*}\vspace{-9pt}%
+}
+
+\newcommand{\resumeSubSubheading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-8pt}
+}
+
+\newcommand{\resumeProjectHeading}[2]{
+    \item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \small#1 & #2 \\
+    \end{tabular*}\vspace{-7pt}
+}
+
+\newcommand{\resumeSimpleProjectHeading}[2]{
+    \vspace{-2pt}\item
+    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
+      \textit{\small#1} & \textit{\small #2} \\
+    \end{tabular*}\vspace{-6pt}
+}
+
+\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
+
+\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
+
+\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.1in, label={}]}
+\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
+\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in]}
+\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-6pt}}
+
+%-------------------------
+% Technical skills: measure all labels, then print aligned rows
+\newlength{\skilllabelwidth}
+\newcommand{\resumeSkillPrepare}{%
+  \setlength{\skilllabelwidth}{0pt}%
+}
+\newcommand{\resumeSkillMeasure}[1]{%
+  \settowidth{\dimen0}{\textbf{#1:}}%
+  \ifdim\dimen0>\skilllabelwidth\setlength{\skilllabelwidth}{\dimen0}\fi
+}
+\newcommand{\resumeSkill}[2]{%
+  \noindent\makebox[\skilllabelwidth][l]{\textbf{#1:}}\hspace{4pt}%
+  \parbox[t]{\dimexpr0.97\textwidth-\skilllabelwidth-4pt\relax}{#2}\par\vspace{4pt}%
+}
+\newcommand{\resumeSkillLast}[2]{%
+  \noindent\makebox[\skilllabelwidth][l]{\textbf{#1:}}\hspace{4pt}%
+  \parbox[t]{\dimexpr0.97\textwidth-\skilllabelwidth-4pt\relax}{#2}\par
+}

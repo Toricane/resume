@@ -22,8 +22,9 @@ $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $repoRoot
 
 $texFile = "prajwal_resume_2026_1page.tex"
+$styleFile = "resume-style.tex"
 $footerFile = "coop_footer.png"
-$resumeSources = @($texFile, $footerFile)
+$resumeSources = @($texFile, $styleFile, $footerFile)
 
 if (-not (Test-Path $texFile)) {
   Write-Error "Missing $texFile"
@@ -31,8 +32,10 @@ if (-not (Test-Path $texFile)) {
 
 $projectFiles = @(
   $texFile,
+  $styleFile,
   $footerFile,
   "preview.png",
+  "preview/index.html",
   "README.md",
   "EDITING.md",
   "watch.ps1",

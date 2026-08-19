@@ -1,102 +1,8 @@
+% Prajwal Prashanth -- 1-page Engineering Physics resume
+% Last updated: 2026-08-18 -- style extract, unified headings, skill-width helper; removed stack TODOs
+
 \documentclass[letterpaper,10pt]{article}
-
-\usepackage{latexsym}
-\usepackage[empty]{fullpage}
-\usepackage{titlesec}
-\usepackage{marvosym}
-\usepackage[usenames,dvipsnames]{color}
-\usepackage{verbatim}
-\usepackage{enumitem}
-\usepackage[hidelinks]{hyperref}
-\usepackage{fancyhdr}
-\usepackage[english]{babel}
-\usepackage{calc}
-\usepackage{graphicx}
-
-\pagestyle{fancy}
-\fancyhf{}
-\fancyfoot{}
-\renewcommand{\headrulewidth}{0pt}
-\renewcommand{\footrulewidth}{0pt}
-
-% Adjust margins
-\addtolength{\oddsidemargin}{-0.7in}
-\addtolength{\evensidemargin}{-0.7in}
-\addtolength{\textwidth}{1.4in}
-\addtolength{\topmargin}{-.7in}
-\addtolength{\textheight}{1.4in}
-
-\urlstyle{same}
-
-\raggedbottom
-\raggedright
-\setlength{\tabcolsep}{0in}
-
-% Sections formatting
-\titleformat{\section}{
-  \vspace{-7pt}\scshape\raggedright\large
-}{}{0em}{}[\color{black}\titlerule \vspace{-6pt}]
-
-% Ensure that generate pdf is machine readable/ATS parsable
-\pdfgentounicode=1
-
-%-------------------------
-% Custom commands
-\newcommand{\resumeItem}[1]{
-  \item\small{
-    {#1 \vspace{-2pt}}
-  }
-}
-
-% Title/Role goes on TOP (unbolded, same small size as body text), organization goes BELOW (italic).
-% #1 = Title/Role  #2 = Date  #3 = Organization  #4 = Location
-\newcommand{\resumeSubheading}[4]{
-  \vspace{0pt}\item
-    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
-      \small#1 & \small#2 \\
-      \textit{\small#3} & \textit{\small #4} \\
-    \end{tabular*}\vspace{-9pt}
-}
-
-% Same as above, but with a "| Tech, Stack, Here" tag next to the title.
-% #1 = Title/Role  #2 = Tech stack  #3 = Date  #4 = Organization  #5 = Location
-\newcommand{\resumeSubheadingTech}[5]{
-  \vspace{0pt}\item
-    \begin{tabular*}{0.97\textwidth}[t]{l@{\extracolsep{\fill}}r}
-      \small#1 \small{$|$ #2} & \small#3 \\
-      \textit{\small#4} & \textit{\small #5} \\
-    \end{tabular*}\vspace{-9pt}
-}
-
-\newcommand{\resumeSubSubheading}[2]{
-    \item
-    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
-      \textit{\small#1} & \textit{\small #2} \\
-    \end{tabular*}\vspace{-8pt}
-}
-
-\newcommand{\resumeProjectHeading}[2]{
-    \item
-    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
-      \small#1 & #2 \\
-    \end{tabular*}\vspace{-7pt}
-}
-
-\newcommand{\resumeSimpleProjectHeading}[2]{
-    \vspace{-2pt}\item
-    \begin{tabular*}{0.97\textwidth}{l@{\extracolsep{\fill}}r}
-      \textit{\small#1} & \textit{\small #2} \\
-    \end{tabular*}\vspace{-6pt}
-}
-
-\newcommand{\resumeSubItem}[1]{\resumeItem{#1}\vspace{-4pt}}
-
-\renewcommand\labelitemii{$\vcenter{\hbox{\tiny$\bullet$}}$}
-
-\newcommand{\resumeSubHeadingListStart}{\begin{itemize}[leftmargin=0.1in, label={}]}
-\newcommand{\resumeSubHeadingListEnd}{\end{itemize}}
-\newcommand{\resumeItemListStart}{\begin{itemize}[leftmargin=0.15in]}
-\newcommand{\resumeItemListEnd}{\end{itemize}\vspace{-6pt}}
+\input{resume-style}
 
 %-------------------------------------------
 %%%%%%  RESUME STARTS HERE  %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -118,31 +24,30 @@
 \resumeSubHeadingListStart
 \item[]
 \small
-\newlength{\skilllabelwidth}
-\settowidth{\skilllabelwidth}{\textbf{Languages \& Frameworks:}}
-\settowidth{\dimen0}{\textbf{Hardware \& Engineering:}}
-\ifdim\dimen0>\skilllabelwidth\setlength{\skilllabelwidth}{\dimen0}\fi
-\noindent\makebox[\skilllabelwidth][l]{\textbf{Languages \& Frameworks:}}\hspace{4pt}\parbox[t]{\dimexpr0.97\textwidth-\skilllabelwidth-4pt\relax}{Python, C++, JavaScript, HTML/CSS, Flask, FastAPI, Next.js, MongoDB}\par\vspace{4pt}
-\noindent\makebox[\skilllabelwidth][l]{\textbf{AI/ML \& Data:}}\hspace{4pt}\parbox[t]{\dimexpr0.97\textwidth-\skilllabelwidth-4pt\relax}{PyTorch, TensorFlow, Gemini API, OpenAI API, Groq, ElevenLabs, ChromaDB, Edge Impulse, Gradio, Manim, Prompt \& Context Engineering, Agentic Engineering}\par\vspace{4pt}
-\noindent\makebox[\skilllabelwidth][l]{\textbf{Hardware \& Engineering:}}\hspace{4pt}\parbox[t]{\dimexpr0.97\textwidth-\skilllabelwidth-4pt\relax}{Arduino Mega 2560, SolidWorks, 3D Printing \& Prototyping}\par\vspace{4pt}
-\noindent\makebox[\skilllabelwidth][l]{\textbf{Developer Tools:}}\hspace{4pt}\parbox[t]{\dimexpr0.97\textwidth-\skilllabelwidth-4pt\relax}{Git \& GitHub, VS Code, GitHub Copilot, Cursor, Linux, Supabase, Vercel}\par
+\resumeSkillPrepare
+\resumeSkillMeasure{Languages \& Frameworks}
+\resumeSkillMeasure{AI/ML \& Data}
+\resumeSkillMeasure{Hardware \& Engineering}
+\resumeSkillMeasure{Developer Tools}
+\resumeSkill{Languages \& Frameworks}{Python, C++, JavaScript, HTML/CSS, Flask, FastAPI, Next.js, MongoDB}
+\resumeSkill{AI/ML \& Data}{PyTorch, TensorFlow, Gemini API, OpenAI API, Groq, ElevenLabs, ChromaDB, Edge Impulse, Gradio, Manim, Prompt \& Context Engineering, Agentic Engineering}
+\resumeSkill{Hardware \& Engineering}{Arduino Mega 2560, SolidWorks, 3D Printing \& Prototyping}
+\resumeSkillLast{Developer Tools}{Git \& GitHub, VS Code, GitHub Copilot, Cursor, Linux, Supabase, Vercel}
 \resumeSubHeadingListEnd
 
 %-----------EXPERIENCE-----------
 \section{Experience}
 \resumeSubHeadingListStart
 
-% TODO: fill in the "| tech stack" tag below with Buildplate's actual stack
-\resumeSubheadingTech
-{Co-founder}{Next.js, Python, MongoDB}{Jun 2026 -- Present}
+\resumeSubheading[Next.js, Python, MongoDB]
+{Co-founder}{Jun 2026 -- Present}
 {Buildplate}{Greater Vancouver, BC (Remote)}
 \resumeItemListStart
 \resumeItem{Building a \href{https://www.buildplate.ca/}{\underline{portfolio platform}} for hardware engineering recruitment, connecting students to companies through project-based profiles.}
 \resumeItemListEnd
 
-% TODO: fill in the "| tech stack" tag below with the bots/automations stack
-\resumeSubheadingTech
-{Community DevOps Manager; Independent Contractor}{Notion, GitHub Actions}{Feb 2026 -- Present}
+\resumeSubheading[Notion, GitHub Actions]
+{Community DevOps Manager; Independent Contractor}{Feb 2026 -- Present}
 {BC + AI Ecosystem Association}{Greater Vancouver, BC (Remote)}
 \resumeItemListStart
 \resumeItem{Designing and maintaining multi-platform community infrastructure for 1,000+ members via custom Discord and WhatsApp bots and automations; building the organization's GitHub presence with internal tooling and an open-source \href{https://bc-ai-ecosystem.github.io/awesome-bc-ai/}{\underline{BC AI showcase directory}}.}
@@ -154,8 +59,8 @@
 \section{Project Experience}
 \resumeSubHeadingListStart
 
-\resumeSubheadingTech
-{Handy Andy: ASL Robotic Hand}{C++, Arduino}{Jan 2026 -- Apr 2026}
+\resumeSubheading[C++, Arduino]
+{Handy Andy: ASL Robotic Hand}{Jan 2026 -- Apr 2026}
 {Langara College}{Vancouver, BC}
 \resumeItemListStart
 \resumeItem{Led a 4-person team as Project Manager to build a robotic hand that translates live English speech into ASL; engineered the hardware interfacing layer, pulley actuation mechanism, and full C++ codebase for Arduino with smoothing algorithms for fluid transitions.}
@@ -168,8 +73,8 @@
 \resumeItem{Led a 6-person team as Project Manager through 10+ design iterations, producing a prototype travelling 10 meters (200\%) farther and 20\% faster than the previous year's record, winning both the distance and speed races and earning the team a 4\% course grade bonus.}
 \resumeItemListEnd
 
-\resumeSubheadingTech
-{JARVIS for the Visually Impaired}{Python, C++, Edge Impulse}{Jan 2024 -- Dec 2024}
+\resumeSubheading[Python, C++, Edge Impulse]
+{JARVIS for the Visually Impaired}{Jan 2024 -- Dec 2024}
 {The Knowledge Society (TKS)}{Vancouver, BC}
 \resumeItemListStart
 \resumeItem{\href{https://www.linkedin.com/posts/prajwal-prashanth_demo-video-of-my-jarvis-project-jarvis-activity-7190196909771268096-mV2p}{\underline{Developed}} a portable, wearable AI voice assistant providing real-time \href{https://www.linkedin.com/posts/prajwal-prashanth_on-sunday-june-9th-i-demoed-my-jarvis-project-activity-7209208311588528129-9Qt-}{\underline{spoken descriptions}} of the user's environment and web-based Q\&A with low latency; ported the core model to a low-power microcontroller using C++ and Edge Impulse for a standalone form factor.}
@@ -177,8 +82,8 @@
 \resumeItem{Work recognized by the co-founders of \href{https://www.gumloop.com/}{\underline{Gumloop}}, who extended an internship offer based on the demonstrated technical skills.}
 \resumeItemListEnd
 
-\resumeSubheadingTech
-{\href{https://docs.google.com/presentation/d/1yIsfPR_GK0eYuB3u7RTidq_JdLOIFxJZOAU0ydceMsY/edit?usp=sharing}{\underline{Improving Google's Internal Announcements System}}}{Gemini API, RAG}{Dec 2023, Aug 2024}
+\resumeSubheading[Gemini API, RAG]
+{\href{https://docs.google.com/presentation/d/1yIsfPR_GK0eYuB3u7RTidq_JdLOIFxJZOAU0ydceMsY/edit?usp=sharing}{\underline{Improving Google's Internal Announcements System}}}{Dec 2023, Aug 2024}
 {The Knowledge Society (TKS)}{Vancouver, BC}
 \resumeItemListStart
 \resumeItem{\href{https://www.loom.com/share/4354baad3c824832b273c5d18267f0a2}{\underline{Designed and built an MVP}} of a centralized announcement platform using Google's Gemini LLM and RAG to deliver personalized updates to Google's sales teams.}
