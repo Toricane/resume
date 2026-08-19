@@ -1,16 +1,19 @@
 <#
 .SYNOPSIS
-  Compile the resume locally, write one versioned PDF, refresh README preview,
-  commit, and push. No GitHub Actions build.
+  Commit and push. If the resume source changed, also compile a new versioned PDF.
+  If only docs/scripts changed, just git add / commit / push.
 
 .EXAMPLE
   .\publish.ps1 -Message "Update Buildplate bullets"
 
 .EXAMPLE
+  .\publish.ps1 -Message "Split editing docs out of README"
+
+.EXAMPLE
   .\publish.ps1
 #>
 param(
-  [string]$Message = "Update resume"
+  [string]$Message = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,17 +22,132 @@ $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $repoRoot
 
 $texFile = "prajwal_resume_2026_1page.tex"
+$footerFile = "coop_footer.png"
+$resumeSources = @($texFile, $footerFile)
+
 if (-not (Test-Path $texFile)) {
   Write-Error "Missing $texFile"
 }
 
-# --- Version = upcoming user commit count (exclude [skip ci] commits) ---
-# Empty repos have no HEAD yet; native git stderr must not stop the script.
+$projectFiles = @(
+  $texFile,
+  $footerFile,
+  "preview.png",
+  "README.md",
+  "EDITING.md",
+  "watch.ps1",
+  "publish.ps1",
+  ".gitignore",
+  ".latexmkrc",
+  ".vscode/settings.json"
+)
+
+function Test-GitHeadExists {
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  git rev-parse --verify HEAD 2>$null | Out-Null
+  $ok = ($LASTEXITCODE -eq 0)
+  $ErrorActionPreference = $prev
+  return $ok
+}
+
+function Test-ResumeSourceChanged {
+  if (-not (Test-GitHeadExists)) {
+    return $true
+  }
+
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  foreach ($f in $resumeSources) {
+    if (-not (Test-Path $f)) {
+      continue
+    }
+    $porcelain = git status --porcelain -- $f 2>$null
+    if ($porcelain) {
+      $ErrorActionPreference = $prev
+      return $true
+    }
+  }
+  $ErrorActionPreference = $prev
+  return $false
+}
+
+function Invoke-GitPush {
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>$null | Out-Null
+  $hasUpstream = ($LASTEXITCODE -eq 0)
+  $ErrorActionPreference = $prev
+
+  if ($hasUpstream) {
+    git push
+  }
+  else {
+    git push -u origin HEAD
+  }
+  if ($LASTEXITCODE -ne 0) {
+    Write-Error "git push failed."
+  }
+}
+
+function Invoke-CommitAndPush {
+  param(
+    [string]$CommitMessage,
+    [string[]]$Paths
+  )
+
+  $existing = @(Get-ChildItem -File -Filter "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue)
+  $toAdd = New-Object System.Collections.Generic.List[string]
+  foreach ($p in $Paths) {
+    if (Test-Path $p) {
+      [void]$toAdd.Add($p)
+    }
+  }
+  foreach ($pdf in $existing) {
+    [void]$toAdd.Add($pdf.Name)
+  }
+
+  git add -- $toAdd.ToArray()
+
+  $status = git status --porcelain
+  if (-not $status) {
+    Write-Host "Nothing to publish."
+    exit 0
+  }
+
+  git commit -m $CommitMessage
+  if ($LASTEXITCODE -ne 0) {
+    Write-Error "git commit failed."
+  }
+
+  Invoke-GitPush
+}
+
+$resumeChanged = Test-ResumeSourceChanged
+$existingPdf = @(Get-ChildItem -File -Filter "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue)
+$needsBuild = $resumeChanged -or ($existingPdf.Count -eq 0)
+
+if ([string]::IsNullOrWhiteSpace($Message)) {
+  if ($needsBuild) {
+    $Message = "Update resume"
+  }
+  else {
+    $Message = "Update project files"
+  }
+}
+
+if (-not $needsBuild) {
+  Write-Host "Resume source unchanged - committing project files only (no new PDF version)." -ForegroundColor Cyan
+  Invoke-CommitAndPush -CommitMessage $Message -Paths $projectFiles
+  Write-Host "Committed and pushed (resume PDF unchanged)." -ForegroundColor Green
+  exit 0
+}
+
+# Resume changed (or no versioned PDF yet): compile + version bump
 $existing = 0
 $prevEap = $ErrorActionPreference
 $ErrorActionPreference = "Continue"
-git rev-parse --verify HEAD 2>$null | Out-Null
-if ($LASTEXITCODE -eq 0) {
+if (Test-GitHeadExists) {
   $countRaw = git rev-list --count --grep='\[skip ci\]' --invert-grep HEAD 2>$null
   if ($countRaw -match '^\d+$') {
     $existing = [int]$countRaw
@@ -42,30 +160,26 @@ $tz = [TimeZoneInfo]::FindSystemTimeZoneById("Pacific Standard Time")
 $date = [TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $tz).ToString("yyyy-MM-dd")
 $pdfName = "Prajwal_UBC_1_Page_Resume_${date}_v${version}.pdf"
 
-Write-Host "Building $pdfName ..." -ForegroundColor Cyan
+Write-Host "Resume source changed - building $pdfName ..." -ForegroundColor Cyan
 
-# Compile with a temp jobname, then copy to versioned name (keep autocompile.pdf untouched)
 $buildJob = "_publish_build"
 $ErrorActionPreference = "Continue"
 & latexmk -pdf -f -interaction=nonstopmode -file-line-error ("-jobname=" + $buildJob) $texFile
 $ErrorActionPreference = "Stop"
-if (-not (Test-Path "$buildJob.pdf")) {
+if (-not (Test-Path ($buildJob + ".pdf"))) {
   Write-Error "LaTeX compile failed (no PDF produced)."
 }
 
-# Remove previous versioned PDFs from the working tree
 Get-ChildItem -File -Filter "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue |
   Remove-Item -Force
 
-Copy-Item -Force "$buildJob.pdf" $pdfName
+Copy-Item -Force ($buildJob + ".pdf") $pdfName
 
-# Clean publish build aux
 $ErrorActionPreference = "Continue"
 & latexmk -C ("-jobname=" + $buildJob) $texFile 2>$null
-Remove-Item -Force "$buildJob.pdf" -ErrorAction SilentlyContinue
+Remove-Item -Force ($buildJob + ".pdf") -ErrorAction SilentlyContinue
 $ErrorActionPreference = "Stop"
 
-# README preview image
 if (Get-Command pdftoppm -ErrorAction SilentlyContinue) {
   $ErrorActionPreference = "Continue"
   & pdftoppm -png -r 200 -f 1 -l 1 $pdfName preview_tmp
@@ -78,7 +192,6 @@ else {
   Write-Warning "pdftoppm not found; skipping preview.png update."
 }
 
-# Point README download link at this PDF
 if (Test-Path "README.md") {
   $readme = Get-Content -Raw "README.md"
   $readme = [regex]::Replace(
@@ -90,23 +203,6 @@ if (Test-Path "README.md") {
   Set-Content -Path "README.md" -Value $readme -NoNewline
 }
 
-# Stage sources + artifacts; record deletions of old PDFs
-$toAdd = @(
-  $texFile,
-  "coop_footer.png",
-  $pdfName,
-  "preview.png",
-  "README.md",
-  "watch.ps1",
-  "publish.ps1",
-  ".gitignore",
-  ".latexmkrc",
-  ".vscode/settings.json"
-) | Where-Object { Test-Path $_ }
-
-git add -- $toAdd
-
-# Stage deleted old versioned PDFs (no-op on empty repos)
 $ErrorActionPreference = "Continue"
 git ls-files -- "Prajwal_UBC_1_Page_Resume_*.pdf" 2>$null | ForEach-Object {
   if (-not (Test-Path $_)) {
@@ -115,31 +211,6 @@ git ls-files -- "Prajwal_UBC_1_Page_Resume_*.pdf" 2>$null | ForEach-Object {
 }
 $ErrorActionPreference = "Stop"
 
-$status = git status --porcelain
-if (-not $status) {
-  Write-Host "Nothing to publish."
-  exit 0
-}
-
-git commit -m $Message
-if ($LASTEXITCODE -ne 0) {
-  Write-Error "git commit failed."
-}
-
-# First push on a new repo needs upstream tracking
-$ErrorActionPreference = "Continue"
-git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>$null | Out-Null
-$hasUpstream = ($LASTEXITCODE -eq 0)
-$ErrorActionPreference = "Stop"
-
-if ($hasUpstream) {
-  git push
-}
-else {
-  git push -u origin HEAD
-}
-if ($LASTEXITCODE -ne 0) {
-  Write-Error "git push failed."
-}
-
+$pathsForCommit = $projectFiles + @($pdfName)
+Invoke-CommitAndPush -CommitMessage $Message -Paths $pathsForCommit
 Write-Host "Published $pdfName locally and pushed to GitHub." -ForegroundColor Green
