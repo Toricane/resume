@@ -40,10 +40,18 @@ $projectFiles = @(
   "EDITING.md",
   "watch.ps1",
   "publish.ps1",
+  "latest.json",
   ".gitignore",
   ".latexmkrc",
   ".vscode/settings.json"
 )
+
+function Write-LatestPointer {
+  param([string]$PdfName)
+  $utf8 = New-Object System.Text.UTF8Encoding $false
+  $json = "{`"file`":`"$PdfName`"}`n"
+  [System.IO.File]::WriteAllText((Join-Path $repoRoot "latest.json"), $json, $utf8)
+}
 
 function Test-GitHeadExists {
   $prev = $ErrorActionPreference
@@ -205,6 +213,8 @@ if (Test-Path "README.md") {
   $readme = $readme.Replace("RESUME_PDF_PLACEHOLDER", $pdfName)
   Set-Content -Path "README.md" -Value $readme -NoNewline
 }
+
+Write-LatestPointer -PdfName $pdfName
 
 $ErrorActionPreference = "Continue"
 git ls-files -- "Prajwal_UBC_1_Page_Resume_*.pdf" 2>$null | ForEach-Object {
