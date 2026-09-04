@@ -41,9 +41,9 @@ Or with an automatic default message:
 
 Behavior:
 
-- **If** `prajwal_resume_2026_1page.tex`, `resume-style.tex`, or `coop_footer.png` changed (or there is no versioned PDF yet): compile, write `Prajwal_UBC_1_Page_Resume_YYYY-MM-DD_vN.pdf`, refresh `preview.png`, the README download link, and `latest.json` (used by https://prajwal.is-a.dev/resume), commit, and push. Default message: `update resume`.
+- **If** `prajwal_resume_2026_1page.tex`, `resume-style.tex`, or `coop_footer.png` changed (or there is no versioned PDF yet): compile, write `Prajwal_UBC_1_Page_Resume_YYYY-MM-DD_vN.pdf`, refresh `preview.png`, the README download link, and `index.html` (GitHub Pages redirect used by https://prajwal.is-a.dev/resume), commit, and push. Default message: `update resume`.
 - **Otherwise** (docs/scripts only): skip compile and version bump; just `git add` / commit / push. Default message: `update project files`.
 
-The website URL never changes. After a resume publish, `latest.json` points at the new filename, so `/resume` still downloads `Prajwal_UBC_1_Page_Resume_YYYY-MM-DD_vN.pdf`.
+`index.html` is a redirect to the current raw PDF. GitHub Pages serves it instead of this README, so `/resume` never shows markdown.
 
 Version numbers increase only when the resume is rebuilt, not on docs-only publishes.

@@ -40,17 +40,34 @@ $projectFiles = @(
   "EDITING.md",
   "watch.ps1",
   "publish.ps1",
-  "latest.json",
+  "index.html",
+  ".nojekyll",
   ".gitignore",
   ".latexmkrc",
   ".vscode/settings.json"
 )
 
-function Write-LatestPointer {
+function Write-ResumeRedirect {
   param([string]$PdfName)
+  $rawUrl = "https://raw.githubusercontent.com/Toricane/resume/refs/heads/main/$PdfName"
+  $html = @"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="refresh" content="0;url=$rawUrl">
+  <link rel="canonical" href="$rawUrl">
+  <title>Prajwal Prashanth — Resume</title>
+  <script>location.replace("$rawUrl")</script>
+</head>
+<body>
+  <p><a href="$rawUrl">Download resume (PDF)</a></p>
+</body>
+</html>
+"@
   $utf8 = New-Object System.Text.UTF8Encoding $false
-  $json = "{`"file`":`"$PdfName`"}`n"
-  [System.IO.File]::WriteAllText((Join-Path $repoRoot "latest.json"), $json, $utf8)
+  [System.IO.File]::WriteAllText((Join-Path $repoRoot "index.html"), $html.Trim() + "`n", $utf8)
+  [System.IO.File]::WriteAllText((Join-Path $repoRoot ".nojekyll"), "", $utf8)
 }
 
 function Test-GitHeadExists {
@@ -214,7 +231,7 @@ if (Test-Path "README.md") {
   Set-Content -Path "README.md" -Value $readme -NoNewline
 }
 
-Write-LatestPointer -PdfName $pdfName
+Write-ResumeRedirect -PdfName $pdfName
 
 $ErrorActionPreference = "Continue"
 git ls-files -- "Prajwal_UBC_1_Page_Resume_*.pdf" 2>$null | ForEach-Object {
