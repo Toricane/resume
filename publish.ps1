@@ -79,6 +79,38 @@ function Test-GitHeadExists {
   return $ok
 }
 
+function Get-NextResumeVersion {
+  param([string]$Date)
+
+  $max = 0
+  $filter = "Prajwal_UBC_1_Page_Resume_${Date}_v*.pdf"
+  $names = New-Object System.Collections.Generic.HashSet[string]
+
+  Get-ChildItem -File -Filter $filter -ErrorAction SilentlyContinue | ForEach-Object {
+    [void]$names.Add($_.Name)
+  }
+
+  $prev = $ErrorActionPreference
+  $ErrorActionPreference = "Continue"
+  git ls-files -- $filter 2>$null | ForEach-Object {
+    if ($_) {
+      [void]$names.Add($_)
+    }
+  }
+  $ErrorActionPreference = $prev
+
+  foreach ($name in $names) {
+    if ($name -match '_v(\d+)\.pdf$') {
+      $n = [int]$Matches[1]
+      if ($n -gt $max) {
+        $max = $n
+      }
+    }
+  }
+
+  return $max + 1
+}
+
 function Test-ResumeSourceChanged {
   if (-not (Test-GitHeadExists)) {
     return $true
@@ -171,21 +203,10 @@ if (-not $needsBuild) {
   exit 0
 }
 
-# Resume changed (or no versioned PDF yet): compile + version bump
-$existing = 0
-$prevEap = $ErrorActionPreference
-$ErrorActionPreference = "Continue"
-if (Test-GitHeadExists) {
-  $countRaw = git rev-list --count --grep='\[skip ci\]' --invert-grep HEAD 2>$null
-  if ($countRaw -match '^\d+$') {
-    $existing = [int]$countRaw
-  }
-}
-$ErrorActionPreference = $prevEap
-$version = $existing + 1
-
+# Resume changed (or no versioned PDF yet): compile + per-date version bump
 $tz = [TimeZoneInfo]::FindSystemTimeZoneById("Pacific Standard Time")
 $date = [TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $tz).ToString("yyyy-MM-dd")
+$version = Get-NextResumeVersion -Date $date
 $pdfName = "Prajwal_UBC_1_Page_Resume_${date}_v${version}.pdf"
 
 Write-Host "Resume source changed - building $pdfName ..." -ForegroundColor Cyan

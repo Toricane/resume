@@ -46,4 +46,4 @@ Behavior:
 
 `index.html` is a redirect to the current raw PDF. GitHub Pages serves it instead of this README, so `/resume` never shows markdown.
 
-Version numbers increase only when the resume is rebuilt, not on docs-only publishes.
+The date is Pacific calendar time. `vN` is the Nth resume PDF published **that day** (first of the day is `v1`). Docs-only publishes do not bump `vN`.
