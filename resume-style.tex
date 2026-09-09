@@ -104,11 +104,15 @@
   \settowidth{\dimen0}{\textbf{#1:}}%
   \ifdim\dimen0>\skilllabelwidth\setlength{\skilllabelwidth}{\dimen0}\fi
 }
-\newcommand{\resumeSkill}[2]{%
+\newcommand{\resumeSkillRow}[2]{%
   \noindent\makebox[\skilllabelwidth][l]{\textbf{#1:}}\hspace{4pt}%
-  \parbox[t]{\dimexpr0.97\textwidth-\skilllabelwidth-4pt\relax}{#2}\par\vspace{4pt}%
+  \parbox[t]{\dimexpr0.97\textwidth-\skilllabelwidth-4pt\relax}{%
+    \raggedright\setlength{\baselineskip}{9.2pt}#2%
+  }\par
+}
+\newcommand{\resumeSkill}[2]{%
+  \resumeSkillRow{#1}{#2}\vspace{-1pt}%
 }
 \newcommand{\resumeSkillLast}[2]{%
-  \noindent\makebox[\skilllabelwidth][l]{\textbf{#1:}}\hspace{4pt}%
-  \parbox[t]{\dimexpr0.97\textwidth-\skilllabelwidth-4pt\relax}{#2}\par
+  \resumeSkillRow{#1}{#2}%
 }
