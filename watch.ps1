@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
   Watch the resume sources. After DebounceSeconds with no further changes,
-  recompile and live-preview in Zen (or your browser) with auto-refresh.
+  sync resume.md and the .tex file, then recompile and live-preview.
 
 .EXAMPLE
   .\watch.ps1
@@ -18,9 +18,10 @@ $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $repoRoot
 
 $texFile = "prajwal_resume_2026_1page.tex"
+$mdFile = "resume.md"
 $styleFile = "resume-style.tex"
 $footerFile = "coop_footer.png"
-$watchFiles = @($texFile, $styleFile, $footerFile)
+$layoutFiles = @($styleFile, $footerFile)
 $buildDir = Join-Path $repoRoot "build"
 $jobName = "autocompile"
 $buildJob = "autocompile_build"
@@ -33,15 +34,22 @@ if (-not (Test-Path $texFile)) {
   Write-Error ("Missing " + $texFile)
 }
 
-function Get-WatchStamp {
-  $parts = @()
-  foreach ($f in $watchFiles) {
-    if (Test-Path $f) {
-      $item = Get-Item $f
-      $parts += ($item.FullName + "|" + $item.LastWriteTimeUtc.Ticks + "|" + $item.Length)
-    }
-  }
-  return ($parts -join ";")
+function Get-OneStamp {
+  param([string]$RelativePath)
+  $path = Join-Path $repoRoot $RelativePath
+  if (-not (Test-Path $path)) { return "missing|$RelativePath" }
+  $item = Get-Item -LiteralPath $path
+  return ($RelativePath + "|" + $item.LastWriteTimeUtc.Ticks + "|" + $item.Length)
+}
+
+function Get-GroupStamp {
+  param([string[]]$Paths)
+  return (($Paths | ForEach-Object { Get-OneStamp $_ }) -join ";")
+}
+
+function Invoke-ResumeSync {
+  param([string]$SyncDirection)
+  & (Join-Path $repoRoot "sync-resume.ps1") -Direction $SyncDirection
 }
 
 function Write-PreviewVersion {
@@ -268,6 +276,13 @@ if (-not $server) {
   Write-Warning "Continuing without live preview server."
 }
 
+try {
+  Invoke-ResumeSync -SyncDirection Reconcile
+}
+catch {
+  Write-Error ("Could not sync resume.md and " + $texFile + ". " + $_.Exception.Message)
+}
+
 # Initial compile
 $ok = Invoke-Compile
 if ($ok -and (-not $NoOpen) -and $server) {
@@ -275,12 +290,16 @@ if ($ok -and (-not $NoOpen) -and $server) {
   Open-Preview -Url $previewUrl
 }
 
-$lastStamp = Get-WatchStamp
+$syncedMd = Get-OneStamp $mdFile
+$syncedTex = Get-OneStamp $texFile
+$syncedLayout = Get-GroupStamp $layoutFiles
+$lastStamp = "$syncedMd;$syncedTex;$syncedLayout"
 $pendingSince = $null
 $compiling = $false
 
 Write-Host ""
-Write-Host ("Watching " + ($watchFiles -join ", ") + ". Debounce: " + $DebounceSeconds + "s.") -ForegroundColor Cyan
+Write-Host ("Watching " + $mdFile + ", " + $texFile + ", " + ($layoutFiles -join ", ") + ". Debounce: " + $DebounceSeconds + "s.") -ForegroundColor Cyan
+Write-Host "Saving resume.md rewrites the .tex file. Saving the .tex file rewrites resume.md." -ForegroundColor Cyan
 if ($server) {
   Write-Host ("Live preview: " + $previewUrl + " (pdf.js; keeps zoom/scroll, no flash)") -ForegroundColor Cyan
 }
@@ -290,12 +309,19 @@ Write-Host ""
 try {
   while ($true) {
     Start-Sleep -Milliseconds 400
-    $stamp = Get-WatchStamp
+    $curMd = Get-OneStamp $mdFile
+    $curTex = Get-OneStamp $texFile
+    $curLayout = Get-GroupStamp $layoutFiles
+    $stamp = "$curMd;$curTex;$curLayout"
 
     if ($stamp -ne $lastStamp) {
       $lastStamp = $stamp
       $pendingSince = Get-Date
-      Write-Host ("[" + (Get-Date -Format "HH:mm:ss") + "] Change detected - waiting " + $DebounceSeconds + "s ...") -ForegroundColor DarkGray
+      $what = New-Object System.Collections.Generic.List[string]
+      if ($curMd -ne $syncedMd) { [void]$what.Add($mdFile) }
+      if ($curTex -ne $syncedTex) { [void]$what.Add($texFile) }
+      if ($curLayout -ne $syncedLayout) { [void]$what.Add("style or footer") }
+      Write-Host ("[" + (Get-Date -Format "HH:mm:ss") + "] " + ($what -join " and ") + " changed - waiting " + $DebounceSeconds + "s ...") -ForegroundColor DarkGray
     }
 
     if (($null -ne $pendingSince) -and (-not $compiling)) {
@@ -304,13 +330,41 @@ try {
         $pendingSince = $null
         $compiling = $true
 
-        $lastStamp = Get-WatchStamp
-        Invoke-Compile | Out-Null
-        $after = Get-WatchStamp
-        if ($after -ne $lastStamp) {
-          $lastStamp = $after
-          $pendingSince = Get-Date
-          Write-Host ("[" + (Get-Date -Format "HH:mm:ss") + "] Changed during compile - waiting " + $DebounceSeconds + "s ...") -ForegroundColor DarkGray
+        $mdChanged = $curMd -ne $syncedMd
+        $texChanged = $curTex -ne $syncedTex
+        $syncFailed = $false
+        try {
+          if ($mdChanged -and $texChanged) {
+            Invoke-ResumeSync -SyncDirection Reconcile
+          }
+          elseif ($mdChanged) {
+            Invoke-ResumeSync -SyncDirection ToTex
+          }
+          elseif ($texChanged) {
+            Invoke-ResumeSync -SyncDirection ToMd
+          }
+        }
+        catch {
+          $syncFailed = $true
+          Write-Host ("[" + (Get-Date -Format "HH:mm:ss") + "] Sync failed: " + $_.Exception.Message) -ForegroundColor Yellow
+        }
+
+        $syncedMd = Get-OneStamp $mdFile
+        $syncedTex = Get-OneStamp $texFile
+        $syncedLayout = Get-GroupStamp $layoutFiles
+        $lastStamp = "$syncedMd;$syncedTex;$syncedLayout"
+
+        if (-not $syncFailed -or $texChanged) {
+          Invoke-Compile | Out-Null
+          $afterMd = Get-OneStamp $mdFile
+          $afterTex = Get-OneStamp $texFile
+          $afterLayout = Get-GroupStamp $layoutFiles
+          $after = "$afterMd;$afterTex;$afterLayout"
+          if ($after -ne $lastStamp) {
+            $lastStamp = $after
+            $pendingSince = Get-Date
+            Write-Host ("[" + (Get-Date -Format "HH:mm:ss") + "] Changed during compile - waiting " + $DebounceSeconds + "s ...") -ForegroundColor DarkGray
+          }
         }
 
         $compiling = $false

@@ -22,18 +22,21 @@ $repoRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $repoRoot
 
 $texFile = "prajwal_resume_2026_1page.tex"
+$mdFile = "resume.md"
 $styleFile = "resume-style.tex"
 $footerFile = "coop_footer.png"
-$resumeSources = @($texFile, $styleFile, $footerFile)
+$resumeSources = @($mdFile, $texFile, $styleFile, $footerFile)
 
 if (-not (Test-Path $texFile)) {
   Write-Error "Missing $texFile"
 }
 
 $projectFiles = @(
+  $mdFile,
   $texFile,
   $styleFile,
   $footerFile,
+  "sync-resume.ps1",
   "preview.png",
   "preview/index.html",
   "README.md",
@@ -181,6 +184,13 @@ function Invoke-CommitAndPush {
   }
 
   Invoke-GitPush
+}
+
+try {
+  & (Join-Path $repoRoot "sync-resume.ps1") -Direction Reconcile
+}
+catch {
+  Write-Error $_.Exception.Message
 }
 
 $resumeChanged = Test-ResumeSourceChanged

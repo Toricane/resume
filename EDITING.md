@@ -1,6 +1,6 @@
 # Editing & publishing this resume
 
-- **Content:** [`prajwal_resume_2026_1page.tex`](prajwal_resume_2026_1page.tex)
+- **Content:** [`resume.md`](resume.md) or [`prajwal_resume_2026_1page.tex`](prajwal_resume_2026_1page.tex)
 - **Formatting / macros:** [`resume-style.tex`](resume-style.tex)
 - **Footer image:** [`coop_footer.png`](coop_footer.png)
 
@@ -15,7 +15,12 @@ Build and publish happen **locally** with MiKTeX (`latexmk` + pdflatex), same en
 .\watch.ps1
 ```
 
-That compiles into `build/` (aux files, logs, and `build/autocompile.pdf`), then opens a **pdf.js** live preview at `http://127.0.0.1:8765/` in **Zen Browser** (if installed). After you stop changing sources for **3 seconds**, it recompiles and the preview updates **without a white flash**, keeping **zoom and scroll**.
+That compiles into `build/` (aux files, logs, and `build/autocompile.pdf`), then opens a **pdf.js** live preview at `http://127.0.0.1:8765/` in **Zen Browser** (if installed). After you stop changing sources for **3 seconds**, it syncs [`resume.md`](resume.md) and [`prajwal_resume_2026_1page.tex`](prajwal_resume_2026_1page.tex), recompiles, and the preview updates **without a white flash**, keeping **zoom and scroll**.
+
+- Saving `resume.md` rewrites the `.tex` file, then recompiles.
+- Saving the `.tex` file rewrites `resume.md`, then recompiles.
+- Saving `resume-style.tex` or `coop_footer.png` only recompiles.
+- If both content files change before the debounce and they no longer match, the newer save wins.
 
 Optional:
 
@@ -26,6 +31,17 @@ Optional:
 ```
 
 Use **Ctrl+scroll** or the toolbar (**Fit width** / **Fit height**) to zoom. Text is selectable/copyable and links are clickable. Needs network once for the pdf.js CDN. Close any Acrobat window on `build/autocompile.pdf` so it cannot lock the file.
+
+## Markdown source
+
+[`resume.md`](resume.md) is the editable Markdown version of the résumé. The format is noted at the top of that file:
+
+- `# Name -- Title`, then one `- [label](url)` contact link per line
+- `## Technical Skills`, with one `**Label:** values` line per row
+- Other sections: `### Role` (or `### [Role](url)`), then `*Organization* | Location`, a dates line, an optional `` `tech stack` `` line, then `-` bullets
+- A plain paragraph under a section is kept as-is (the hackathon “Also competed…” line)
+
+`.\publish.ps1` reconciles `resume.md` and the `.tex` file the same way before it decides whether to build a new PDF. A change to either content file publishes a new version.
 
 ## Publish
 
@@ -41,7 +57,7 @@ Or with an automatic default message:
 
 Behavior:
 
-- **If** `prajwal_resume_2026_1page.tex`, `resume-style.tex`, or `coop_footer.png` changed (or there is no versioned PDF yet): compile, write `Prajwal_UBC_1_Page_Resume_YYYY-MM-DD_vN.pdf`, refresh `preview.png`, the README download link, and `index.html` (GitHub Pages redirect used by https://prajwal.is-a.dev/resume), commit, and push. Default message: `update resume`.
+- **If** `resume.md`, `prajwal_resume_2026_1page.tex`, `resume-style.tex`, or `coop_footer.png` changed (or there is no versioned PDF yet): compile, write `Prajwal_UBC_1_Page_Resume_YYYY-MM-DD_vN.pdf`, refresh `preview.png`, the README download link, and `index.html` (GitHub Pages redirect used by https://prajwal.is-a.dev/resume), commit, and push. Default message: `update resume`.
 - **Otherwise** (docs/scripts only): skip compile and version bump; just `git add` / commit / push. Default message: `update project files`.
 
 `index.html` is a redirect to the current raw PDF. GitHub Pages serves it instead of this README, so `/resume` never shows markdown.
