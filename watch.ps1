@@ -21,11 +21,12 @@ $texFile = "prajwal_resume_2026_1page.tex"
 $styleFile = "resume-style.tex"
 $footerFile = "coop_footer.png"
 $watchFiles = @($texFile, $styleFile, $footerFile)
+$buildDir = Join-Path $repoRoot "build"
 $jobName = "autocompile"
 $buildJob = "autocompile_build"
-$pdfPath = Join-Path $repoRoot ($jobName + ".pdf")
-$buildPdfPath = Join-Path $repoRoot ($buildJob + ".pdf")
-$versionPath = Join-Path $repoRoot "autocompile-version.txt"
+$pdfPath = Join-Path $buildDir ($jobName + ".pdf")
+$buildPdfPath = Join-Path $buildDir ($buildJob + ".pdf")
+$versionPath = Join-Path $buildDir "version.txt"
 $previewUrl = "http://127.0.0.1:$PreviewPort/"
 
 if (-not (Test-Path $texFile)) {
@@ -53,7 +54,7 @@ function Write-PreviewVersion {
 
 function Invoke-Compile {
   Write-Host ""
-  Write-Host ("[" + (Get-Date -Format "HH:mm:ss") + "] Compiling -> " + $jobName + ".pdf ...") -ForegroundColor Cyan
+  Write-Host ("[" + (Get-Date -Format "HH:mm:ss") + "] Compiling -> build/" + $jobName + ".pdf ...") -ForegroundColor Cyan
 
   $before = [datetime]::MinValue
   if (Test-Path $pdfPath) {
@@ -75,7 +76,7 @@ function Invoke-Compile {
     Copy-Item -Force $buildPdfPath $pdfPath
   }
   catch {
-    Write-Host ("[" + (Get-Date -Format "HH:mm:ss") + "] Could not update autocompile.pdf (file locked?). Close Acrobat if it has the PDF open.") -ForegroundColor Yellow
+    Write-Host ("[" + (Get-Date -Format "HH:mm:ss") + "] Could not update build/autocompile.pdf (file locked?). Close Acrobat if it has the PDF open.") -ForegroundColor Yellow
     return $false
   }
 
@@ -191,7 +192,7 @@ function Start-PreviewServer {
           }
         }
         elseif ($path -eq "/version") {
-          $vp = Join-Path $root "autocompile-version.txt"
+          $vp = Join-Path $root "build\version.txt"
           $text = if (Test-Path $vp) { Get-Content -Raw $vp } else { "0" }
           $bytes = [Text.Encoding]::UTF8.GetBytes($text)
           $res.ContentType = "text/plain; charset=utf-8"
@@ -200,7 +201,7 @@ function Start-PreviewServer {
           $res.OutputStream.Write($bytes, 0, $bytes.Length)
         }
         elseif ($path -eq "/autocompile.pdf") {
-          $fp = Join-Path $root "autocompile.pdf"
+          $fp = Join-Path $root "build\autocompile.pdf"
           if (-not (Test-Path $fp)) {
             $res.StatusCode = 404
           }

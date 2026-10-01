@@ -8,14 +8,14 @@ Build and publish happen **locally** with MiKTeX (`latexmk` + pdflatex), same en
 
 ## Live autocompile
 
-1. Close any `autocompile.pdf` tab inside Cursor/VS Code (it shows raw PDF bytes — the editor is not a PDF viewer).
+1. Close any `build/autocompile.pdf` tab inside Cursor/VS Code (it shows raw PDF bytes — the editor is not a PDF viewer).
 2. Run:
 
 ```powershell
 .\watch.ps1
 ```
 
-That compiles, then opens a **pdf.js** live preview at `http://127.0.0.1:8765/` in **Zen Browser** (if installed). After you stop changing sources for **3 seconds**, it recompiles and the preview updates **without a white flash**, keeping **zoom and scroll**.
+That compiles into `build/` (aux files, logs, and `build/autocompile.pdf`), then opens a **pdf.js** live preview at `http://127.0.0.1:8765/` in **Zen Browser** (if installed). After you stop changing sources for **3 seconds**, it recompiles and the preview updates **without a white flash**, keeping **zoom and scroll**.
 
 Optional:
 
@@ -25,7 +25,7 @@ Optional:
 .\watch.ps1 -PreviewPort 8765
 ```
 
-Use **Ctrl+scroll** or the toolbar (**Fit width** / **Fit height**) to zoom. Text is selectable/copyable and links are clickable. Needs network once for the pdf.js CDN. Close any Acrobat window on `autocompile.pdf` so it cannot lock the file.
+Use **Ctrl+scroll** or the toolbar (**Fit width** / **Fit height**) to zoom. Text is selectable/copyable and links are clickable. Needs network once for the pdf.js CDN. Close any Acrobat window on `build/autocompile.pdf` so it cannot lock the file.
 
 ## Publish
 

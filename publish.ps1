@@ -211,22 +211,24 @@ $pdfName = "Prajwal_UBC_1_Page_Resume_${date}_v${version}.pdf"
 
 Write-Host "Resume source changed - building $pdfName ..." -ForegroundColor Cyan
 
+$buildDir = "build"
 $buildJob = "_publish_build"
+$buildPdf = Join-Path $buildDir ($buildJob + ".pdf")
 $ErrorActionPreference = "Continue"
 & latexmk -pdf -f -interaction=nonstopmode -file-line-error ("-jobname=" + $buildJob) $texFile
 $ErrorActionPreference = "Stop"
-if (-not (Test-Path ($buildJob + ".pdf"))) {
+if (-not (Test-Path $buildPdf)) {
   Write-Error "LaTeX compile failed (no PDF produced)."
 }
 
 Get-ChildItem -File -Filter "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue |
   Remove-Item -Force
 
-Copy-Item -Force ($buildJob + ".pdf") $pdfName
+Copy-Item -Force $buildPdf $pdfName
 
 $ErrorActionPreference = "Continue"
 & latexmk -C ("-jobname=" + $buildJob) $texFile 2>$null
-Remove-Item -Force ($buildJob + ".pdf") -ErrorAction SilentlyContinue
+Remove-Item -Force $buildPdf -ErrorAction SilentlyContinue
 $ErrorActionPreference = "Stop"
 
 if (Get-Command pdftoppm -ErrorAction SilentlyContinue) {
