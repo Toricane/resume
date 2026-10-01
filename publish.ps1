@@ -41,6 +41,7 @@ $projectFiles = @(
   "preview/index.html",
   "README.md",
   "EDITING.md",
+  "AGENTS.md",
   "watch.ps1",
   "publish.ps1",
   "index.html",
