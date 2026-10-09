@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Commit and push. If the resume source changed, also compile a new versioned PDF.
   If only docs/scripts changed, just git add / commit / push.
@@ -39,6 +39,7 @@ $projectFiles = @(
   "sync-resume.ps1",
   "preview.png",
   "preview/index.html",
+  "preview/public.html",
   "README.md",
   "EDITING.md",
   "AGENTS.md",
@@ -51,24 +52,14 @@ $projectFiles = @(
   ".vscode/settings.json"
 )
 
-function Write-ResumeRedirect {
+function Write-ResumeViewer {
   param([string]$PdfName)
-  $rawUrl = "https://raw.githubusercontent.com/Toricane/resume/refs/heads/main/$PdfName"
-  $html = @"
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="refresh" content="0;url=$rawUrl">
-  <link rel="canonical" href="$rawUrl">
-  <title>Prajwal Prashanth — Resume</title>
-  <script>location.replace("$rawUrl")</script>
-</head>
-<body>
-  <p><a href="$rawUrl">Download resume (PDF)</a></p>
-</body>
-</html>
-"@
+  $templatePath = Join-Path $repoRoot "preview/public.html"
+  $html = [System.IO.File]::ReadAllText($templatePath)
+  if (-not $html.Contains("RESUME_PDF_PLACEHOLDER")) {
+    throw "Public viewer template is missing RESUME_PDF_PLACEHOLDER."
+  }
+  $html = $html.Replace("RESUME_PDF_PLACEHOLDER", [System.Net.WebUtility]::HtmlEncode($PdfName))
   $utf8 = New-Object System.Text.UTF8Encoding $false
   [System.IO.File]::WriteAllText((Join-Path $repoRoot "index.html"), $html.Trim() + "`n", $utf8)
   [System.IO.File]::WriteAllText((Join-Path $repoRoot ".nojekyll"), "", $utf8)
@@ -265,7 +256,7 @@ if (Test-Path "README.md") {
   Set-Content -Path "README.md" -Value $readme -NoNewline
 }
 
-Write-ResumeRedirect -PdfName $pdfName
+Write-ResumeViewer -PdfName $pdfName
 
 $ErrorActionPreference = "Continue"
 git ls-files -- "Prajwal_UBC_1_Page_Resume_*.pdf" 2>$null | ForEach-Object {

@@ -74,10 +74,10 @@ Leave the résumé wording alone when the request is formatting only. Compile af
 | --- | --- |
 | Markdown ↔ LaTeX | [`sync-resume.ps1`](sync-resume.ps1) (`ToTex`, `ToMd`, `Reconcile`, `SelfTest`) |
 | Live preview and debounce | [`watch.ps1`](watch.ps1), [`preview/index.html`](preview/index.html) |
-| Versioned PDF, README link, `index.html` redirect | [`publish.ps1`](publish.ps1) |
+| Versioned PDF, README link, public PDF viewer | [`publish.ps1`](publish.ps1) |
 | Engine | [`.latexmkrc`](.latexmkrc) (`latexmk` + pdflatex, output in `build/`) |
 
-`publish.ps1` only commits paths in `$projectFiles`. Add a new tracked file there. Add a path to `$resumeSources` only when a change to it should build a new `Prajwal_UBC_1_Page_Resume_YYYY-MM-DD_vN.pdf`. Docs and script changes publish without a new PDF. `index.html` and the README download link are rewritten by publish; do not hand-edit the PDF URL.
+`publish.ps1` only commits paths in `$projectFiles`. Add a new tracked file there. Add a path to `$resumeSources` only when a change to it should build a new `Prajwal_UBC_1_Page_Resume_YYYY-MM-DD_vN.pdf`. Docs and script changes publish without a new PDF. `index.html` is generated from `preview/public.html`, and the README download link is rewritten by publish; do not hand-edit the PDF URL. Change the public viewer template for layout or behavior updates.
 
 If the Markdown format changes, update both directions in `sync-resume.ps1`, the comment at the top of `resume.md`, and this file. Then run:
 
