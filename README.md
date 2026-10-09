@@ -4,7 +4,7 @@ One-page Engineering Physics resume (UBC Science Co-op).
 
 ## Download
 
-[**Download PDF**](Prajwal_UBC_1_Page_Resume_2026-10-08_v1.pdf)
+[**Download PDF**](Prajwal_UBC_1_Page_Resume_2026-10-08_v2.pdf)
 
 The stable site link is [https://prajwal.is-a.dev/resume](https://prajwal.is-a.dev/resume) (redirects to the current versioned PDF).
 
