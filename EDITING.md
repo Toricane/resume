@@ -57,7 +57,7 @@ Or with an automatic default message:
 
 Behavior:
 
-- **If** `resume.md`, `prajwal_resume_2026_1page.tex`, `resume-style.tex`, or `coop_footer.png` changed (or there is no versioned PDF yet): compile, write `Prajwal_UBC_1_Page_Resume_YYYY-MM-DD_vN.pdf`, refresh `preview.png`, the README download link, and `index.html` (GitHub Pages PDF viewer used by https://prajwal.is-a.dev/resume), commit, and push. Default message: `update resume`.
+- **If** `resume.md`, `prajwal_resume_2026_1page.tex`, `resume-style.tex`, or `coop_footer.png` changed (or there is no versioned PDF yet): compile, write `Prajwal_Prashanth_UBC_YYYY-MM-DD_vN.pdf`, refresh `preview.png`, the README download link, and `index.html` (GitHub Pages PDF viewer used by https://prajwal.is-a.dev/resume), commit, and push. Default message: `update resume`.
 - **Otherwise** (docs/scripts only): skip compile and version bump; just `git add` / commit / push. Default message: `update project files`.
 
 `index.html` displays the current PDF using pdf.js, with selectable text, clickable links, zoom controls, and a Download button. It is generated from `preview/public.html`; edit that template for public viewer changes. The PDF uses a relative URL so it loads and downloads from the same site. GitHub Pages serves the viewer instead of this README.

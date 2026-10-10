@@ -78,10 +78,10 @@ function Get-NextResumeVersion {
   param([string]$Date)
 
   $max = 0
-  $filter = "Prajwal_UBC_1_Page_Resume_${Date}_v*.pdf"
+  $filter = @("Prajwal_Prashanth_UBC_${Date}_v*.pdf", "Prajwal_UBC_1_Page_Resume_${Date}_v*.pdf")
   $names = New-Object System.Collections.Generic.HashSet[string]
 
-  Get-ChildItem -File -Filter $filter -ErrorAction SilentlyContinue | ForEach-Object {
+  Get-ChildItem -File -Path $filter -ErrorAction SilentlyContinue | ForEach-Object {
     [void]$names.Add($_.Name)
   }
 
@@ -151,7 +151,7 @@ function Invoke-CommitAndPush {
     [string[]]$Paths
   )
 
-  $existing = @(Get-ChildItem -File -Filter "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue)
+  $existing = @(Get-ChildItem -File -Path "Prajwal_Prashanth_UBC_*.pdf", "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue)
   $toAdd = New-Object System.Collections.Generic.List[string]
   foreach ($p in $Paths) {
     if (Test-Path $p) {
@@ -160,6 +160,13 @@ function Invoke-CommitAndPush {
   }
   foreach ($pdf in $existing) {
     [void]$toAdd.Add($pdf.Name)
+  }
+
+  # Include removed PDFs so a filename change is published even without a rebuild.
+  git ls-files -- "Prajwal_Prashanth_UBC_*.pdf" "Prajwal_UBC_1_Page_Resume_*.pdf" | ForEach-Object {
+    if (-not (Test-Path $_)) {
+      [void]$toAdd.Add($_)
+    }
   }
 
   git add -- $toAdd.ToArray()
@@ -186,7 +193,7 @@ catch {
 }
 
 $resumeChanged = Test-ResumeSourceChanged
-$existingPdf = @(Get-ChildItem -File -Filter "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue)
+$existingPdf = @(Get-ChildItem -File -Path "Prajwal_Prashanth_UBC_*.pdf", "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue)
 $needsBuild = $resumeChanged -or ($existingPdf.Count -eq 0)
 
 if ([string]::IsNullOrWhiteSpace($Message)) {
@@ -209,7 +216,7 @@ if (-not $needsBuild) {
 $tz = [TimeZoneInfo]::FindSystemTimeZoneById("Pacific Standard Time")
 $date = [TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $tz).ToString("yyyy-MM-dd")
 $version = Get-NextResumeVersion -Date $date
-$pdfName = "Prajwal_UBC_1_Page_Resume_${date}_v${version}.pdf"
+$pdfName = "Prajwal_Prashanth_UBC_${date}_v${version}.pdf"
 
 Write-Host "Resume source changed - building $pdfName ..." -ForegroundColor Cyan
 
@@ -223,7 +230,7 @@ if (-not (Test-Path $buildPdf)) {
   Write-Error "LaTeX compile failed (no PDF produced)."
 }
 
-Get-ChildItem -File -Filter "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue |
+Get-ChildItem -File -Path "Prajwal_Prashanth_UBC_*.pdf", "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue |
   Remove-Item -Force
 
 Copy-Item -Force $buildPdf $pdfName
@@ -249,7 +256,7 @@ if (Test-Path "README.md") {
   $readme = Get-Content -Raw "README.md"
   $readme = [regex]::Replace(
     $readme,
-    'Prajwal_UBC_1_Page_Resume_\d{4}-\d{2}-\d{2}_v\d+\.pdf',
+    '(?:Prajwal_Prashanth_UBC|Prajwal_UBC_1_Page_Resume)_\d{4}-\d{2}-\d{2}_v\d+\.pdf',
     $pdfName
   )
   $readme = $readme.Replace("RESUME_PDF_PLACEHOLDER", $pdfName)
@@ -259,7 +266,7 @@ if (Test-Path "README.md") {
 Write-ResumeViewer -PdfName $pdfName
 
 $ErrorActionPreference = "Continue"
-git ls-files -- "Prajwal_UBC_1_Page_Resume_*.pdf" 2>$null | ForEach-Object {
+git ls-files -- "Prajwal_Prashanth_UBC_*.pdf" "Prajwal_UBC_1_Page_Resume_*.pdf" 2>$null | ForEach-Object {
   if (-not (Test-Path $_)) {
     git rm --quiet --ignore-unmatch -- $_
   }
