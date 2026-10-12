@@ -8,6 +8,8 @@ One-page Engineering Physics resume (UBC Science Co-op).
 
 The stable site link is [https://prajwal.is-a.dev/resume](https://prajwal.is-a.dev/resume) (opens a browser viewer with a Download button).
 
+Raw Markdown is available at [/resume/resume.md](https://prajwal.is-a.dev/resume/resume.md), which serves `resume.md` verbatim.
+
 ## Preview
 
 ![Resume preview](preview.png)
