@@ -26,6 +26,7 @@ $mdFile = "resume.md"
 $styleFile = "resume-style.tex"
 $footerFile = "coop_footer.png"
 $resumeSources = @($mdFile, $texFile, $styleFile, $footerFile)
+$pdfPatterns = @("Prajwal_Prashanth_UBC_????-??-??_v*.pdf", "Prajwal_Prashanth_????-??-??_v*.pdf", "Prajwal_UBC_1_Page_Resume_????-??-??_v*.pdf")
 
 if (-not (Test-Path $texFile)) {
   Write-Error "Missing $texFile"
@@ -78,7 +79,7 @@ function Get-NextResumeVersion {
   param([string]$Date)
 
   $max = 0
-  $filter = @("Prajwal_Prashanth_UBC_${Date}_v*.pdf", "Prajwal_UBC_1_Page_Resume_${Date}_v*.pdf")
+  $filter = @("Prajwal_Prashanth_UBC_${Date}_v*.pdf", "Prajwal_Prashanth_${Date}_v*.pdf", "Prajwal_UBC_1_Page_Resume_${Date}_v*.pdf")
   $names = New-Object System.Collections.Generic.HashSet[string]
 
   Get-ChildItem -File -Path $filter -ErrorAction SilentlyContinue | ForEach-Object {
@@ -151,7 +152,7 @@ function Invoke-CommitAndPush {
     [string[]]$Paths
   )
 
-  $existing = @(Get-ChildItem -File -Path "Prajwal_Prashanth_UBC_*.pdf", "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue)
+  $existing = @(Get-ChildItem -File -Path $pdfPatterns -ErrorAction SilentlyContinue)
   $toAdd = New-Object System.Collections.Generic.List[string]
   foreach ($p in $Paths) {
     if (Test-Path $p) {
@@ -163,7 +164,7 @@ function Invoke-CommitAndPush {
   }
 
   # Include removed PDFs so a filename change is published even without a rebuild.
-  git ls-files -- "Prajwal_Prashanth_UBC_*.pdf" "Prajwal_UBC_1_Page_Resume_*.pdf" | ForEach-Object {
+  git ls-files -- $pdfPatterns | ForEach-Object {
     if (-not (Test-Path $_)) {
       [void]$toAdd.Add($_)
     }
@@ -193,8 +194,10 @@ catch {
 }
 
 $resumeChanged = Test-ResumeSourceChanged
-$existingPdf = @(Get-ChildItem -File -Path "Prajwal_Prashanth_UBC_*.pdf", "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue)
-$needsBuild = $resumeChanged -or ($existingPdf.Count -eq 0)
+$existingPdf = @(Get-ChildItem -File -Path $pdfPatterns -ErrorAction SilentlyContinue)
+$ubcPdf = @($existingPdf | Where-Object { $_.Name -like 'Prajwal_Prashanth_UBC_*' })
+$hasPair = $existingPdf.Count -eq 2 -and $ubcPdf.Count -eq 1 -and (Test-Path ($ubcPdf[0].Name.Replace('_UBC_', '_')))
+$needsBuild = $resumeChanged -or -not $hasPair
 
 if ([string]::IsNullOrWhiteSpace($Message)) {
   if ($needsBuild) {
@@ -217,27 +220,36 @@ $tz = [TimeZoneInfo]::FindSystemTimeZoneById("Pacific Standard Time")
 $date = [TimeZoneInfo]::ConvertTimeFromUtc((Get-Date).ToUniversalTime(), $tz).ToString("yyyy-MM-dd")
 $version = Get-NextResumeVersion -Date $date
 $pdfName = "Prajwal_Prashanth_UBC_${date}_v${version}.pdf"
+$plainPdfName = "Prajwal_Prashanth_${date}_v${version}.pdf"
 
 Write-Host "Resume source changed - building $pdfName ..." -ForegroundColor Cyan
 
 $buildDir = "build"
-$buildJob = "_publish_build"
-$buildPdf = Join-Path $buildDir ($buildJob + ".pdf")
-$ErrorActionPreference = "Continue"
-& latexmk -pdf -f -interaction=nonstopmode -file-line-error ("-jobname=" + $buildJob) $texFile
-$ErrorActionPreference = "Stop"
-if (-not (Test-Path $buildPdf)) {
-  Write-Error "LaTeX compile failed (no PDF produced)."
+$buildJobs = @("_publish_build", "_publish_build_plain")
+New-Item -ItemType Directory -Path $buildDir -Force | Out-Null
+$plainSource = Join-Path $buildDir "_publish_plain.tex"
+[IO.File]::WriteAllText((Join-Path $repoRoot $plainSource), '\def\ResumeNoCoopFooter{1}\input{prajwal_resume_2026_1page.tex}')
+foreach ($buildJob in $buildJobs) {
+  $source = if ($buildJob -eq "_publish_build") { $texFile } else { $plainSource }
+  & latexmk -pdf -interaction=nonstopmode -file-line-error -halt-on-error ("-jobname=" + $buildJob) $source
+  if ($LASTEXITCODE -ne 0) { throw "LaTeX compile failed: $buildJob" }
+  $log = Get-Content -Raw (Join-Path $buildDir ($buildJob + ".log"))
+  if ($log -notmatch 'Output written on [^(]+\(1 page,') {
+    throw "Resume must be exactly one page: $buildJob"
+  }
 }
 
-Get-ChildItem -File -Path "Prajwal_Prashanth_UBC_*.pdf", "Prajwal_UBC_1_Page_Resume_*.pdf" -ErrorAction SilentlyContinue |
+Get-ChildItem -File -Path $pdfPatterns -ErrorAction SilentlyContinue |
   Remove-Item -Force
 
-Copy-Item -Force $buildPdf $pdfName
+Copy-Item -Force (Join-Path $buildDir "_publish_build.pdf") $pdfName
+Copy-Item -Force (Join-Path $buildDir "_publish_build_plain.pdf") $plainPdfName
 
 $ErrorActionPreference = "Continue"
-& latexmk -C ("-jobname=" + $buildJob) $texFile 2>$null
-Remove-Item -Force $buildPdf -ErrorAction SilentlyContinue
+foreach ($buildJob in $buildJobs) {
+  & latexmk -C ("-jobname=" + $buildJob) $texFile 2>$null
+  Remove-Item -LiteralPath (Join-Path $buildDir ($buildJob + ".pdf")) -Force -ErrorAction SilentlyContinue
+}
 $ErrorActionPreference = "Stop"
 
 if (Get-Command pdftoppm -ErrorAction SilentlyContinue) {
@@ -259,6 +271,7 @@ if (Test-Path "README.md") {
     '(?:Prajwal_Prashanth_UBC|Prajwal_UBC_1_Page_Resume)_\d{4}-\d{2}-\d{2}_v\d+\.pdf',
     $pdfName
   )
+  $readme = [regex]::Replace($readme, 'Prajwal_Prashanth_\d{4}-\d{2}-\d{2}_v\d+\.pdf', $plainPdfName)
   $readme = $readme.Replace("RESUME_PDF_PLACEHOLDER", $pdfName)
   Set-Content -Path "README.md" -Value $readme -NoNewline
 }
@@ -266,13 +279,13 @@ if (Test-Path "README.md") {
 Write-ResumeViewer -PdfName $pdfName
 
 $ErrorActionPreference = "Continue"
-git ls-files -- "Prajwal_Prashanth_UBC_*.pdf" "Prajwal_UBC_1_Page_Resume_*.pdf" 2>$null | ForEach-Object {
+git ls-files -- $pdfPatterns 2>$null | ForEach-Object {
   if (-not (Test-Path $_)) {
     git rm --quiet --ignore-unmatch -- $_
   }
 }
 $ErrorActionPreference = "Stop"
 
-$pathsForCommit = $projectFiles + @($pdfName)
+$pathsForCommit = $projectFiles + @($pdfName, $plainPdfName)
 Invoke-CommitAndPush -CommitMessage $Message -Paths $pathsForCommit
-Write-Host "Published $pdfName locally and pushed to GitHub." -ForegroundColor Green
+Write-Host "Published $pdfName and $plainPdfName locally and pushed to GitHub." -ForegroundColor Green

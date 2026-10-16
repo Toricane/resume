@@ -25,3 +25,5 @@ build/
 
 # Default latexmk output when compiling the .tex directly (not published)
 prajwal_resume_2026_1page.pdf
+
+linkedin_export/

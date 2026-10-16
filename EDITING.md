@@ -36,7 +36,7 @@ Use **Ctrl+scroll** or the toolbar (**Fit width** / **Fit height**) to zoom. Tex
 
 [`resume.md`](resume.md) is the editable Markdown version of the résumé. The format is noted at the top of that file:
 
-- `# Name -- Title`, then one `- [label](url)` contact link per line
+- `# Name` (optionally `# Name -- Title`), then one `- [label](url)` contact link per line
 - `## Technical Skills`, with one `**Label:** values` line per row
 - Other sections: `### Role` (or `### [Role](url)`), then `*Organization* | Location`, a dates line, an optional `` `tech stack` `` line, then `-` bullets
 - A plain paragraph under a section is kept as-is (the hackathon “Also competed…” line)
@@ -57,8 +57,10 @@ Or with an automatic default message:
 
 Behavior:
 
-- **If** `resume.md`, `prajwal_resume_2026_1page.tex`, `resume-style.tex`, or `coop_footer.png` changed (or there is no versioned PDF yet): compile, write `Prajwal_Prashanth_UBC_YYYY-MM-DD_vN.pdf`, refresh `preview.png`, the README download link, and `index.html` (GitHub Pages PDF viewer used by https://prajwal.is-a.dev/resume), commit, and push. Default message: `update resume`.
+- **If** `resume.md`, `prajwal_resume_2026_1page.tex`, `resume-style.tex`, or `coop_footer.png` changed (or the matching PDF pair is missing): compile, write matching `Prajwal_Prashanth_UBC_YYYY-MM-DD_vN.pdf` and `Prajwal_Prashanth_YYYY-MM-DD_vN.pdf` in the root (replacing the old dated PDFs), refresh `preview.png`, both README download links, and `index.html` (GitHub Pages PDF viewer used by https://prajwal.is-a.dev/resume), commit, and push. Default message: `update resume`.
 - **Otherwise** (docs/scripts only): skip compile and version bump; just `git add` / commit / push. Default message: `update project files`.
+
+Both variants must compile to one page before old PDFs are replaced. The live preview, `preview.png`, and public viewer use only the UBC version.
 
 `index.html` displays the current PDF using pdf.js, with selectable text, clickable links, zoom controls, and a Download button. It is generated from `preview/public.html`; edit that template for public viewer changes. The PDF uses a relative URL so it loads and downloads from the same site. GitHub Pages serves the viewer instead of this README.
 

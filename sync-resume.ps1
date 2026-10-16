@@ -356,9 +356,7 @@ function ConvertFrom-ResumeTex {
   }
   $heading = $Matches[1]
   $split = $heading -split ' -- ', 2
-  if ($split.Count -lt 2) {
-    throw "Heading must look like Name -- Title."
-  }
+  if ($split.Count -lt 2) { $split = @($heading, '') }
 
   $sectionMarks = New-Object System.Collections.Generic.List[object]
   $search = 0
@@ -527,7 +525,7 @@ function ConvertFrom-ResumeTex {
 function ConvertFrom-ResumeMarkdown {
   param([string]$Text)
   $stripped = [regex]::Replace($Text, '(?s)<!--.*?-->', '')
-  $lines = $stripped -split '\r?\n', -1
+  $lines = $stripped -split '\r?\n'
   $name = $null
   $title = $null
   $contacts = New-Object System.Collections.Generic.List[object]
@@ -605,11 +603,11 @@ function ConvertFrom-ResumeMarkdown {
       if ($null -ne $name) { throw "Only one # heading is allowed." }
       $heading = $trim.Substring(2).Trim()
       $parts = $heading -split ' -- ', 2
-      if ($parts.Count -lt 2 -or [string]::IsNullOrWhiteSpace($parts[0]) -or [string]::IsNullOrWhiteSpace($parts[1])) {
-        throw "Heading must look like # Name -- Title."
+      if ([string]::IsNullOrWhiteSpace($parts[0]) -or ($parts.Count -eq 2 -and [string]::IsNullOrWhiteSpace($parts[1]))) {
+        throw "Heading must look like # Name or # Name -- Title."
       }
       $name = $parts[0]
-      $title = $parts[1]
+      $title = if ($parts.Count -eq 2) { $parts[1] } else { '' }
       $mode = 'contacts'
       continue
     }
@@ -717,7 +715,7 @@ function ConvertTo-ResumeMarkdown {
   [void]$lines.Add('  - Saving the .tex file rewrites this file and recompiles the PDF.')
   [void]$lines.Add('')
   [void]$lines.Add('  Format:')
-  [void]$lines.Add('  # Name -- Title')
+  [void]$lines.Add('  # Name (or # Name -- Title)')
   [void]$lines.Add('  - [label](url) for each contact link')
   [void]$lines.Add('  ## Technical Skills')
   [void]$lines.Add('  **Label:** values')
@@ -730,7 +728,9 @@ function ConvertTo-ResumeMarkdown {
   [void]$lines.Add('  A plain paragraph is kept under that section (no bullet).')
   [void]$lines.Add('-->')
   [void]$lines.Add('')
-  [void]$lines.Add('# ' + $Model.Name + ' -- ' + $Model.Title)
+  $heading = $Model.Name
+  if (-not [string]::IsNullOrWhiteSpace($Model.Title)) { $heading += ' -- ' + $Model.Title }
+  [void]$lines.Add('# ' + $heading)
   [void]$lines.Add('')
   foreach ($contact in @($Model.Contacts)) {
     [void]$lines.Add('- [' + $contact.Text + '](' + $contact.Url + ')')
@@ -789,7 +789,9 @@ function ConvertTo-ResumeTex {
   [void]$lines.Add('')
   [void]$lines.Add('%----------HEADING----------')
   [void]$lines.Add('\begin{center}')
-  [void]$lines.Add('    \textbf{\huge \scshape ' + (ConvertTo-LatexText ($Model.Name + ' -- ' + $Model.Title)) + '} \\ \vspace{2pt}')
+  $heading = $Model.Name
+  if (-not [string]::IsNullOrWhiteSpace($Model.Title)) { $heading += ' -- ' + $Model.Title }
+  [void]$lines.Add('    \textbf{\huge \scshape ' + (ConvertTo-LatexText $heading) + '} \\ \vspace{2pt}')
   [void]$lines.Add('    \small')
   $contactList = @($Model.Contacts)
   for ($i = 0; $i -lt $contactList.Count; $i++) {
@@ -863,8 +865,10 @@ function ConvertTo-ResumeTex {
 
   [void]$lines.Add('')
   [void]$lines.Add('%-----------CO-OP FOOTER-----------')
+  [void]$lines.Add('\ifdefined\ResumeNoCoopFooter\else')
   [void]$lines.Add('\vfill')
   [void]$lines.Add('\noindent\includegraphics[width=\textwidth]{coop_footer.png}')
+  [void]$lines.Add('\fi')
   [void]$lines.Add('')
   [void]$lines.Add('%-------------------------------------------')
   [void]$lines.Add('\end{document}')
