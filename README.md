@@ -4,9 +4,9 @@ One-page Engineering Physics resume (UBC Science Co-op).
 
 ## Download
 
-[**Download UBC co-op PDF**](Prajwal_Prashanth_UBC_2026-10-16_v2.pdf)
+[**Download UBC co-op PDF**](Prajwal_Prashanth_UBC_2026-10-16_v3.pdf)
 
-[**Download PDF without co-op footer**](Prajwal_Prashanth_2026-10-16_v2.pdf)
+[**Download PDF without co-op footer**](Prajwal_Prashanth_2026-10-16_v3.pdf)
 
 The stable site link is [https://prajwal.is-a.dev/resume](https://prajwal.is-a.dev/resume) (opens a browser viewer with a Download button).
 

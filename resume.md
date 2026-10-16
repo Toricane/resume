@@ -53,7 +53,7 @@ Jun 2026 -- Aug 2026
 May 2026 -- Aug 2026
 `Python, FastAPI, React, QuestDB, Docker`
 
-- Built the initial [ForgeX Trading](https://forgextrading.com/) backtesting platform, now serving 150+ users including three paying users, with historical-market replay and simulated buy/sell orders.
+- Built the initial [ForgeX Trading](https://forgextrading.com/) backtesting platform, now serving 150+ users, with replay and simulated buy/sell orders.
 - Implemented QuestDB storage, batched ingestion, and incremental synchronization for historical market data; supported migration and developer onboarding to hand off the platform.
 
 ## Projects
