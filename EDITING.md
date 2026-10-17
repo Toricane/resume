@@ -32,6 +32,14 @@ Optional:
 
 Use **Ctrl+scroll** or the toolbar (**Fit width** / **Fit height**) to zoom. Text is selectable/copyable and links are clickable. Needs network once for the pdf.js CDN. Close any Acrobat window on `build/autocompile.pdf` so it cannot lock the file.
 
+### Compare with a past resume
+
+Click **Compare** to put a published PDF on the left and the current live PDF on the right. Choose any saved UBC version from **Past version**, use the arrow buttons, or press **Ctrl+Left / Ctrl+Right** for older / newer versions. Selecting a version also opens comparison mode. Click **Compare** again to return to a single preview, or press **Ctrl+Right** (or the right-arrow button) when already at the newest past version. The first **Ctrl+Left** or older-arrow click opens the nearest past version without skipping it. If the current PDF matches the latest publication, that identical publication is omitted from comparison choices; the next older version becomes the first choice. Matching compares rendered pages and link targets, so PDF timestamp changes do not create a false difference.
+
+Zoom controls and **Ctrl+scroll** on either PDF zoom both panes together. Scrolling either pane horizontally or vertically moves both to the same PDF position. The current pane still refreshes after recompiling; the selected past version stays fixed. Text selection and links work in both panes.
+
+History includes dated UBC PDFs in the project folder and older published UBC PDFs from local Git history, including files removed by publishing. It does not include unpublished edits or commits without a saved PDF. Restart the watcher and reload the preview after updating its code.
+
 ## Markdown source
 
 [`resume.md`](resume.md) is the editable Markdown version of the résumé. The format is noted at the top of that file:

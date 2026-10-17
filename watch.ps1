@@ -174,6 +174,55 @@ function Start-PreviewServer {
       }
     }
 
+    # Only published resume PDFs are exposed. Git blobs are read as binary, never
+    # piped through PowerShell's text output (which corrupts PDF streams).
+    function Get-ResumeHistory {
+      $entries = [Collections.Generic.List[object]]::new()
+      $seen = [Collections.Generic.HashSet[string]]::new()
+      $pattern = '^Prajwal_(?:Prashanth_UBC_|UBC_1_Page_Resume_)(\d{4}-\d{2}-\d{2})_v(\d+)\.pdf$'
+      foreach ($file in (Get-ChildItem -LiteralPath $root -File -Filter '*.pdf')) {
+        if ($file.Name -notmatch $pattern) { continue }
+        $date = $Matches[1]; $version = [int]$Matches[2]
+        [void]$seen.Add($file.Name)
+        $entries.Add([pscustomobject]@{ id = $file.Name; name = $file.Name; date = $date; version = $version; source = 'file' })
+      }
+      $commit = ''
+      $lines = & git -C $root log --all --no-renames --format=%H --name-only --diff-filter=AM -- '*.pdf' 2>$null
+      foreach ($line in $lines) {
+        if ($line -match '^[a-f0-9]{40}$') { $commit = $line; continue }
+        if ($line -notmatch $pattern -or -not $commit) { continue }
+        $date = $Matches[1]; $version = [int]$Matches[2]
+        if (-not $seen.Add($line)) { continue }
+        $blob = & git -C $root rev-parse "${commit}:$line" 2>$null
+        if ($LASTEXITCODE -eq 0 -and $blob -match '^[a-f0-9]{40}$') {
+          $entries.Add([pscustomobject]@{ id = $blob; name = $line; date = $date; version = $version; source = 'git' })
+        }
+      }
+      return @($entries | Sort-Object @{Expression='date';Descending=$true}, @{Expression='version';Descending=$true}, @{Expression={ if ($_.name -match 'UBC') { 0 } else { 1 } }}, name)
+    }
+
+    function Read-GitPdf([string]$blob) {
+      $info = [Diagnostics.ProcessStartInfo]::new()
+      $info.FileName = 'git'
+      $info.Arguments = "cat-file blob $blob"
+      $info.WorkingDirectory = $root
+      $info.UseShellExecute = $false
+      $info.CreateNoWindow = $true
+      $info.RedirectStandardOutput = $true
+      $process = [Diagnostics.Process]::Start($info)
+      $stream = [IO.MemoryStream]::new()
+      try {
+        $process.StandardOutput.BaseStream.CopyTo($stream)
+        $process.WaitForExit()
+        if ($process.ExitCode -ne 0) { throw 'Could not read historical PDF' }
+        return ,$stream.ToArray()
+      }
+      finally { $stream.Dispose(); $process.Dispose() }
+    }
+
+    $history = @()
+    $historyAt = [datetime]::MinValue
+
     while ($listener.IsListening) {
       try {
         $ctx = $listener.GetContext()
@@ -206,6 +255,27 @@ function Start-PreviewServer {
           $res.ContentType = "text/plain; charset=utf-8"
           $res.ContentLength64 = $bytes.Length
           $res.Headers["Cache-Control"] = "no-store"
+          $res.OutputStream.Write($bytes, 0, $bytes.Length)
+        }
+        elseif ($path -eq '/history' -or $path -eq '/history.pdf') {
+          if (((Get-Date) - $historyAt).TotalSeconds -gt 10) {
+            $history = @(Get-ResumeHistory)
+            $historyAt = Get-Date
+          }
+          if ($path -eq '/history') {
+            $json = ConvertTo-Json -InputObject @($history | Select-Object id, name, date, version) -Compress
+            $bytes = [Text.Encoding]::UTF8.GetBytes($json)
+            $res.ContentType = 'application/json; charset=utf-8'
+          }
+          else {
+            $id = $req.QueryString['id']
+            $entry = $history | Where-Object { $_.id -ceq $id } | Select-Object -First 1
+            if (-not $entry) { $res.StatusCode = 404; continue }
+            $bytes = if ($entry.source -eq 'git') { Read-GitPdf $entry.id } else { [IO.File]::ReadAllBytes((Join-Path $root $entry.name)) }
+            $res.ContentType = 'application/pdf'
+          }
+          $res.Headers['Cache-Control'] = 'no-store'
+          $res.ContentLength64 = $bytes.Length
           $res.OutputStream.Write($bytes, 0, $bytes.Length)
         }
         elseif ($path -eq "/autocompile.pdf") {

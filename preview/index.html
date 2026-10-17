@@ -30,12 +30,12 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      height: 40px;
+      min-height: 44px;
       padding: 0 12px;
       background: var(--bar);
       border-bottom: 1px solid #000;
       user-select: none;
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
     }
     #toolbar button {
       background: #3a3a3a;
@@ -54,15 +54,25 @@
     #status.busy { color: var(--accent); }
     #status.err { color: #f08080; }
     #hint { color: var(--muted); font-size: 12px; white-space: nowrap; }
-    #viewport {
+    body { display: flex; flex-direction: column; }
+    #workspace { display: flex; flex: 1; min-height: 0; }
+    .pane { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+    .pane[hidden] { display: none; }
+    .pane + .pane { border-left: 1px solid #111; }
+    .pane-heading { min-height: 36px; padding: 8px 12px; background: var(--bar); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    select { max-width: min(340px, 55vw); background: #3a3a3a; color: var(--fg); padding: 6px; border: 1px solid #777; border-radius: 4px; font: inherit; }
+    button:disabled { opacity: .45; cursor: default !important; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .empty { padding: 24px; color: var(--muted); }
+    .viewport {
       position: relative;
-      height: calc(100% - 40px);
+      flex: 1; min-height: 0;
       overflow: auto;
       background: #333;
     }
-    #stage {
+    .stage {
       position: relative;
-      margin: 16px auto;
+      padding: 16px;
       width: max-content;
       min-width: 100%;
       display: flex;
@@ -132,12 +142,24 @@
     <button type="button" id="zoomFitWidth" title="Fit width">Fit width</button>
     <button type="button" id="zoomFitHeight" title="Fit height">Fit height</button>
     <button type="button" id="zoomReal" title="Actual print size on this display (1 PDF inch = 1 screen inch)">Real size</button>
-    <span id="hint">Ctrl+scroll · select text · click links</span>
-    <span id="status">Starting…</span>
+    <button type="button" id="compare" aria-pressed="false" disabled>Compare</button>
+    <button type="button" id="older" aria-label="Older resume" title="Older resume (Ctrl+Left)" disabled>&larr;</button>
+    <label for="history">Past version</label>
+    <select id="history" disabled><option>Loading history...</option></select>
+    <button type="button" id="newer" aria-label="Newer resume" title="Newer resume (Ctrl+Right)" disabled>&rarr;</button>
+    <span id="hint">Ctrl+Left/Right: versions · Ctrl+scroll: zoom both</span>
+    <span id="status" role="status">Starting…</span>
   </div>
-  <div id="viewport">
-    <div id="stage"></div>
-  </div>
+  <main id="workspace">
+    <section class="pane" id="pastPane" aria-label="Past resume" hidden>
+      <div class="pane-heading" id="pastTitle">Past resume</div>
+      <div class="viewport" id="pastViewport" tabindex="0" aria-label="Past PDF, scroll synchronized"><div class="stage" id="pastStage"><div class="empty">Choose a past version to compare.</div></div></div>
+    </section>
+    <section class="pane" aria-label="Current resume">
+      <div class="pane-heading">Current · live preview</div>
+      <div class="viewport" id="viewport" tabindex="0" aria-label="Current PDF, scroll synchronized"><div class="stage" id="stage"></div></div>
+    </section>
+  </main>
 
   <script type="module">
     import * as pdfjsLib from "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs";
@@ -177,14 +199,33 @@
       executeSetOCGState() {},
     };
 
-    let scale = 1;
-    let lastVersion = "";
-    let pdfDoc = null;
-    let visiblePage = null;
+    let scale = realSizeScale();
     let renderGen = 0;
-    let rendering = false;
-    let pendingBytes = null;
-    let pendingRenderOpts = null;
+    const panes = [
+      { viewport: viewportEl, stage: stageEl, doc: null, page: null, sequence: 0 },
+      { viewport: document.getElementById("pastViewport"), stage: document.getElementById("pastStage"), doc: null, page: null, sequence: 0 },
+    ];
+    const pastPane = document.getElementById("pastPane");
+    const historySelect = document.getElementById("history");
+    const compareButton = document.getElementById("compare");
+    const olderButton = document.getElementById("older");
+    const newerButton = document.getElementById("newer");
+    let comparing = false;
+    let history = [];
+    let publishedHistory = [];
+    let historyReady = null;
+    let currentReady = null;
+    let comparisonRevision = 0;
+    let latestSignature = null;
+    const signatures = new WeakMap();
+    let navigation = Promise.resolve();
+    let lastVersion = "";
+    let polling = false;
+    let running = false;
+    let dirty = false;
+    let camera = { x: 0, y: 0 };
+    let retiredDocs = [];
+    let syncing = false;
 
     function setStatus(text, kind) {
       statusEl.textContent = text;
@@ -301,212 +342,301 @@
       return pageEl;
     }
 
-    /** Atomic swap — no stacked canvases, no delayed fade leftovers. */
-    function showPage(pageEl, scrollLeft, scrollTop) {
-      stageEl.replaceChildren(pageEl);
-      visiblePage = pageEl;
-      viewportEl.scrollLeft = scrollLeft;
-      viewportEl.scrollTop = scrollTop;
+    function applyCamera() {
+      syncing = true;
+      for (const pane of panes) {
+        if (!pane.page || (pane === panes[1] && !comparing)) continue;
+        pane.viewport.scrollLeft = pane.page.offsetLeft + camera.x * scale;
+        pane.viewport.scrollTop = pane.page.offsetTop + camera.y * scale;
+        pane.expectedX = pane.viewport.scrollLeft;
+        pane.expectedY = pane.viewport.scrollTop;
+      }
+      syncing = false;
     }
 
-    async function renderCurrent(opts = {}) {
-      const {
-        fitWidth = false,
-        fitHeight = false,
-        realSize = false,
-        preserveScroll = true,
-      } = opts;
-      if (!pdfDoc) return;
-
-      const gen = ++renderGen;
-      rendering = true;
-      setStatus("Rendering…", "busy");
-
-      const scrollLeft = viewportEl.scrollLeft;
-      const scrollTop = viewportEl.scrollTop;
-
+    // Coalesce rapid zoom, version selection and live reload into one render queue.
+    // Only a complete pair at the latest scale is swapped onto the screen.
+    async function queueRender() {
+      dirty = true;
+      ++renderGen;
+      if (running) return;
+      running = true;
       try {
-        const page = await pdfDoc.getPage(1);
-        if (realSize) scale = realSizeScale();
-        if (fitWidth) scale = fitWidthScale(page);
-        if (fitHeight) scale = fitHeightScale(page);
-
-        const pageEl = await buildPage(pdfDoc, scale, gen);
-        if (!pageEl || gen !== renderGen) return;
-
-        updateZoomLabel();
-        showPage(
-          pageEl,
-          preserveScroll ? scrollLeft : viewportEl.scrollLeft,
-          preserveScroll ? scrollTop : viewportEl.scrollTop
-        );
-        setStatus("Live", "ok");
-      } catch (err) {
-        if (gen === renderGen) {
-          console.error(err);
-          setStatus("Render error", "err");
+        while (dirty) {
+          dirty = false;
+          const gen = renderGen;
+          const targetScale = scale;
+          const active = panes.filter((p, i) => p.doc && (!i || comparing));
+          setStatus("Rendering…", "busy");
+          try {
+            const pages = await Promise.all(active.map(p => buildPage(p.doc, targetScale, gen)));
+            if (gen !== renderGen) continue;
+            active.forEach((pane, i) => {
+              pane.stage.replaceChildren(pages[i]);
+              pane.page = pages[i];
+              pane.renderedScale = targetScale;
+            });
+            applyCamera();
+            updateZoomLabel();
+            setStatus("Live", "ok");
+          } catch (error) {
+            console.error(error);
+            if (gen === renderGen) setStatus("Render error — try zooming again", "err");
+          }
         }
       } finally {
-        if (gen === renderGen) {
-          rendering = false;
-          await flushPending();
-        }
+        running = false;
+        const retired = retiredDocs;
+        retiredDocs = [];
+        await Promise.all(retired.map(async doc => {
+          await signatures.get(doc)?.catch(() => {});
+          await doc.destroy();
+        }));
       }
     }
 
-    async function flushPending() {
-      if (pendingBytes) {
-        const next = pendingBytes;
-        pendingBytes = null;
-        await loadPdfBytes(next);
-        return;
-      }
-      if (pendingRenderOpts) {
-        const opts = pendingRenderOpts;
-        pendingRenderOpts = null;
-        await renderCurrent(opts);
-      }
-    }
-
-    async function loadPdfBytes(bytes) {
-      if (rendering) {
-        pendingBytes = bytes;
-        return;
-      }
-
-      rendering = true;
-      setStatus("Updating…", "busy");
-      const gen = ++renderGen;
-      const scrollLeft = viewportEl.scrollLeft;
-      const scrollTop = viewportEl.scrollTop;
-      const firstLoad = !visiblePage;
-
-      try {
-        const loadingTask = pdfjsLib.getDocument({ data: bytes.slice(0) });
-        const doc = await loadingTask.promise;
-        if (gen !== renderGen) return;
-
-        pdfDoc = doc;
-
-        if (firstLoad) {
-          scale = realSizeScale();
-        }
-
-        const pageEl = await buildPage(doc, scale, gen);
-        if (!pageEl || gen !== renderGen) return;
-
-        updateZoomLabel();
-        showPage(pageEl, scrollLeft, scrollTop);
-        setStatus("Live", "ok");
-      } catch (err) {
-        if (gen === renderGen) {
-          console.error(err);
-          setStatus("Load error", "err");
-        }
-      } finally {
-        if (gen === renderGen) {
-          rendering = false;
-          await flushPending();
-        }
-      }
-    }
-
-    async function fetchPdf(version) {
-      const r = await fetch("/autocompile.pdf?v=" + encodeURIComponent(version), {
-        cache: "no-store",
-      });
-      if (!r.ok) throw new Error("PDF HTTP " + r.status);
-      return new Uint8Array(await r.arrayBuffer());
+    async function loadPdf(pane, url) {
+      const sequence = ++pane.sequence;
+      const response = await fetch(url, { cache: "no-store" });
+      if (!response.ok) throw new Error("PDF HTTP " + response.status);
+      const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await response.arrayBuffer()) }).promise;
+      if (sequence !== pane.sequence) { await doc.destroy(); return false; }
+      if (pane.doc) retiredDocs.push(pane.doc);
+      pane.doc = doc;
+      await queueRender();
+      return sequence === pane.sequence;
     }
 
     async function pollVersion() {
+      if (polling) return;
+      polling = true;
       try {
-        const r = await fetch("/version?_=" + Date.now(), { cache: "no-store" });
-        if (!r.ok) return;
-        const v = (await r.text()).trim();
-        if (!v || v === lastVersion) return;
-        lastVersion = v;
-        const bytes = await fetchPdf(v);
-        await loadPdfBytes(bytes);
-      } catch (err) {
-        console.error(err);
+        const response = await fetch("/version?_=" + Date.now(), { cache: "no-store" });
+        if (!response.ok) throw new Error("Version unavailable");
+        const version = (await response.text()).trim();
+        if (version && version !== "0" && version !== lastVersion) {
+          await loadPdf(panes[0], "/autocompile.pdf?v=" + encodeURIComponent(version));
+          lastVersion = version;
+          await reconcileHistory();
+        }
+      } catch (error) {
+        console.error(error);
         setStatus("Waiting for PDF…", "busy");
+      } finally { polling = false; }
+    }
+
+    function updateNavigation() {
+      const index = historySelect.selectedIndex;
+      olderButton.disabled = !history.length || (comparing && index >= history.length - 1);
+      newerButton.disabled = !comparing;
+      newerButton.title = comparing && index === 0
+        ? "Return to current resume (Ctrl+Right)"
+        : "Newer resume (Ctrl+Right)";
+      newerButton.setAttribute("aria-label", comparing && index === 0 ? "Close past version preview" : "Newer resume");
+      historySelect.disabled = !history.length;
+      compareButton.disabled = !history.length;
+      compareButton.setAttribute("aria-pressed", String(comparing));
+    }
+
+    async function selectHistory() {
+      const entry = history[historySelect.selectedIndex];
+      if (!entry) return;
+      updateNavigation();
+      document.getElementById("pastTitle").textContent = entry.name;
+      setStatus("Loading past version…", "busy");
+      try {
+        if (await loadPdf(panes[1], "/history.pdf?id=" + encodeURIComponent(entry.id))) {
+          panes[1].historyName = entry.name;
+        }
+      } catch (error) {
+        console.error(error);
+        if (historySelect.value === entry.name) setStatus("Could not load past version — select again to retry", "err");
       }
     }
 
-    function queueRender(opts) {
-      if (rendering) {
-        pendingRenderOpts = opts;
-        return Promise.resolve();
-      }
-      return renderCurrent(opts);
+    function setComparison(enabled, loadSelection = true) {
+      comparing = enabled && history.length > 0;
+      pastPane.hidden = !comparing;
+      updateNavigation();
+      if (comparing && loadSelection && panes[1].historyName !== historySelect.value) selectHistory();
+      queueRender();
     }
 
-    function zoomBy(factor, anchorX, anchorY) {
-      const prev = scale;
+    // Compare rendered content rather than PDF bytes: recompilation changes PDF
+    // timestamps and IDs even when every visible word and layout stays identical.
+    function documentSignature(doc) {
+      if (!signatures.has(doc)) signatures.set(doc, (async () => {
+        const parts = [];
+        for (let number = 1; number <= doc.numPages; number++) {
+          const page = await doc.getPage(number);
+          const viewport = page.getViewport({ scale: 1 });
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.ceil(viewport.width);
+          canvas.height = Math.ceil(viewport.height);
+          const context = canvas.getContext("2d", { willReadFrequently: true });
+          await page.render({ canvasContext: context, viewport }).promise;
+          const digest = await crypto.subtle.digest("SHA-256", context.getImageData(0, 0, canvas.width, canvas.height).data);
+          const links = (await page.getAnnotations()).map(a => [a.subtype, a.rect, a.url || a.unsafeUrl || ""]);
+          parts.push([canvas.width, canvas.height, Array.from(new Uint8Array(digest)), links]);
+          canvas.width = canvas.height = 0;
+        }
+        return JSON.stringify(parts);
+      })());
+      return signatures.get(doc);
+    }
+
+    async function reconcileHistory() {
+      const revision = ++comparisonRevision;
+      let entries = publishedHistory;
+      const current = panes[0].doc;
+      if (entries.length && !current) return;
+      if (entries.length && current) {
+        const latest = entries[0];
+        if (!latestSignature || latestSignature.id !== latest.id) {
+          latestSignature = { id: latest.id, promise: (async () => {
+            const response = await fetch("/history.pdf?id=" + encodeURIComponent(latest.id), { cache: "no-store" });
+            if (!response.ok) throw new Error("History PDF HTTP " + response.status);
+            const doc = await pdfjsLib.getDocument({ data: new Uint8Array(await response.arrayBuffer()) }).promise;
+            try { return await documentSignature(doc); }
+            finally { await doc.destroy(); }
+          })() };
+        }
+        try {
+          const [live, published] = await Promise.all([documentSignature(current), latestSignature.promise]);
+          if (live === published) entries = entries.slice(1);
+        } catch (error) {
+          // A failed comparison must not hide a version or prevent navigation.
+          console.error(error);
+          latestSignature = null;
+        }
+      }
+      if (revision !== comparisonRevision) return;
+      const selected = comparing ? historySelect.value : "";
+      history = entries;
+      historySelect.replaceChildren(...entries.map(entry => {
+        const option = document.createElement("option");
+        // A Git blob can appear under multiple published names. Selection must
+        // identify the publication, otherwise restoring it jumps to the first alias.
+        option.value = entry.name;
+        option.textContent = entry.name.replace(".pdf", "");
+        return option;
+      }));
+      if (!entries.length) historySelect.add(new Option(publishedHistory.length ? "No earlier distinct version" : "No published PDFs found", ""));
+      if (entries.some(entry => entry.name === selected)) historySelect.value = selected;
+      if (comparing && !entries.length) setComparison(false);
+      updateNavigation();
+      if (comparing && historySelect.value !== selected) await selectHistory();
+    }
+
+    function moveHistory(delta) {
+      // Serialize initial input while history/current PDF are still loading so a
+      // quick second press moves exactly once beyond the first selected version.
+      navigation = navigation.then(async () => {
+        await Promise.all([historyReady, currentReady]);
+        if (!panes[0].doc) await pollVersion();
+        await reconcileHistory();
+        if (!comparing) {
+          if (delta > 0 && history.length) setComparison(true);
+          return;
+        }
+        const next = historySelect.selectedIndex + delta;
+        if (next < 0) {
+          setComparison(false);
+          return;
+        }
+        if (next >= history.length) return;
+        historySelect.selectedIndex = next;
+        setComparison(true, false);
+        await selectHistory();
+      }).catch(error => { console.error(error); setStatus("Could not navigate history — try again", "err"); });
+    }
+
+    async function refreshHistory() {
+      try {
+        const response = await fetch("/history", { cache: "no-store" });
+        if (!response.ok) throw new Error("History HTTP " + response.status);
+        const entries = await response.json();
+        if (JSON.stringify(entries) === JSON.stringify(publishedHistory)) return;
+        publishedHistory = entries;
+        await reconcileHistory();
+      } catch (error) {
+        if (!history.length) historySelect.replaceChildren(new Option("History unavailable — restart watcher", ""));
+        updateNavigation();
+      }
+    }
+
+    function zoomBy(factor, source = panes[0], clientX, clientY) {
       const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * factor));
-      if (Math.abs(next - prev) < 1e-6) return;
-
-      const rect = viewportEl.getBoundingClientRect();
-      const ax = anchorX == null ? rect.width / 2 : anchorX - rect.left;
-      const ay = anchorY == null ? rect.height / 2 : anchorY - rect.top;
-      const contentX = (viewportEl.scrollLeft + ax) / prev;
-      const contentY = (viewportEl.scrollTop + ay) / prev;
-
+      if (next === scale) return;
+      const rect = source.viewport.getBoundingClientRect();
+      const ax = clientX == null ? source.viewport.clientWidth / 2 : clientX - rect.left;
+      const ay = clientY == null ? source.viewport.clientHeight / 2 : clientY - rect.top;
+      const pointX = source.page && !running
+        ? (source.viewport.scrollLeft + ax - source.page.offsetLeft) / source.renderedScale
+        : camera.x + ax / scale;
+      const pointY = source.page && !running
+        ? (source.viewport.scrollTop + ay - source.page.offsetTop) / source.renderedScale
+        : camera.y + ay / scale;
+      camera = { x: pointX - ax / next, y: pointY - ay / next };
       scale = next;
       updateZoomLabel();
-
-      queueRender({ preserveScroll: false }).then(() => {
-        viewportEl.scrollLeft = contentX * scale - ax;
-        viewportEl.scrollTop = contentY * scale - ay;
-      });
+      queueRender();
     }
 
-    document.getElementById("zoomIn").addEventListener("click", () => zoomBy(ZOOM_STEP));
-    document.getElementById("zoomOut").addEventListener("click", () => zoomBy(1 / ZOOM_STEP));
-    document.getElementById("zoomFitWidth").addEventListener("click", () => {
-      queueRender({ fitWidth: true, preserveScroll: false });
-    });
-    document.getElementById("zoomFitHeight").addEventListener("click", () => {
-      queueRender({ fitHeight: true, preserveScroll: false });
-    });
-    document.getElementById("zoomReal").addEventListener("click", () => {
-      queueRender({ realSize: true, preserveScroll: false });
-    });
-
-    viewportEl.addEventListener(
-      "wheel",
-      (e) => {
-        if (!e.ctrlKey && !e.metaKey) return;
-        e.preventDefault();
-        const factor = e.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
-        zoomBy(factor, e.clientX, e.clientY);
-      },
-      { passive: false }
-    );
-
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "+" || e.key === "=") {
-        e.preventDefault();
-        zoomBy(ZOOM_STEP);
-      } else if (e.key === "-" || e.key === "_") {
-        e.preventDefault();
-        zoomBy(1 / ZOOM_STEP);
-      } else if (e.key === "0") {
-        e.preventDefault();
-        queueRender({ fitWidth: true, preserveScroll: false });
-      } else if (e.key === "9") {
-        e.preventDefault();
-        queueRender({ fitHeight: true, preserveScroll: false });
-      } else if (e.key === "1") {
-        e.preventDefault();
-        queueRender({ realSize: true, preserveScroll: false });
+    async function fit(mode) {
+      if (!panes[0].doc) return;
+      const page = await panes[0].doc.getPage(1);
+      scale = mode === "width" ? fitWidthScale(page) : mode === "height" ? fitHeightScale(page) : realSizeScale();
+      if (comparing && panes[1].doc && mode !== "real") {
+        const old = (await panes[1].doc.getPage(1)).getViewport({ scale: 1 });
+        scale = Math.min(scale, mode === "width" ? (panes[1].viewport.clientWidth - 32) / old.width : (panes[1].viewport.clientHeight - 32) / old.height);
       }
-    });
+      camera = { x: -16 / scale, y: -16 / scale };
+      queueRender();
+    }
 
+    for (const pane of panes) {
+      pane.viewport.addEventListener("scroll", () => {
+        if (syncing || !pane.page || running) return;
+        if (pane.viewport.scrollLeft === pane.expectedX && pane.viewport.scrollTop === pane.expectedY) return;
+        camera = {
+          x: (pane.viewport.scrollLeft - pane.page.offsetLeft) / pane.renderedScale,
+          y: (pane.viewport.scrollTop - pane.page.offsetTop) / pane.renderedScale,
+        };
+        applyCamera();
+      });
+      pane.viewport.addEventListener("wheel", event => {
+        if (!event.ctrlKey && !event.metaKey) return;
+        event.preventDefault();
+        zoomBy(event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP, pane, event.clientX, event.clientY);
+      }, { passive: false });
+    }
+    document.getElementById("zoomIn").onclick = () => zoomBy(ZOOM_STEP);
+    document.getElementById("zoomOut").onclick = () => zoomBy(1 / ZOOM_STEP);
+    document.getElementById("zoomFitWidth").onclick = () => fit("width");
+    document.getElementById("zoomFitHeight").onclick = () => fit("height");
+    document.getElementById("zoomReal").onclick = () => fit("real");
+    compareButton.onclick = () => setComparison(!comparing);
+    historySelect.onchange = () => { setComparison(true, false); selectHistory(); };
+    olderButton.onclick = () => moveHistory(1);
+    newerButton.onclick = () => moveHistory(-1);
+    window.addEventListener("resize", applyCamera);
+    window.addEventListener("keydown", event => {
+      if ((event.ctrlKey || event.metaKey) && ["ArrowLeft", "ArrowRight"].includes(event.key)) {
+        event.preventDefault();
+        moveHistory(event.key === "ArrowLeft" ? 1 : -1);
+        return;
+      }
+      if (event.target.closest("select, input, textarea, [contenteditable=true]") || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (["+", "="].includes(event.key)) { event.preventDefault(); zoomBy(ZOOM_STEP); }
+      else if (["-", "_"].includes(event.key)) { event.preventDefault(); zoomBy(1 / ZOOM_STEP); }
+      else if (["0", "9", "1"].includes(event.key)) { event.preventDefault(); fit({ "0": "width", "9": "height", "1": "real" }[event.key]); }
+    });
     updateZoomLabel();
-    pollVersion();
+    historyReady = refreshHistory();
+    currentReady = pollVersion();
     setInterval(pollVersion, 800);
+    setInterval(refreshHistory, 15000);
   </script>
 </body>
 </html>
