@@ -209,6 +209,7 @@ if ([string]::IsNullOrWhiteSpace($Message)) {
 }
 
 if (-not $needsBuild) {
+  Write-ResumeViewer -PdfName $ubcPdf[0].Name
   Write-Host "Resume source unchanged - committing project files only (no new PDF version)." -ForegroundColor Cyan
   Invoke-CommitAndPush -CommitMessage $Message -Paths $projectFiles
   Write-Host "Committed and pushed (resume PDF unchanged)." -ForegroundColor Green

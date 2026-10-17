@@ -62,6 +62,6 @@ Behavior:
 
 Both variants must compile to one page before old PDFs are replaced. The live preview, `preview.png`, and public viewer use only the UBC version.
 
-`index.html` displays the current PDF using pdf.js, with selectable text, clickable links, zoom controls, and a Download button. It is generated from `preview/public.html`; edit that template for public viewer changes. The PDF uses a relative URL so it loads and downloads from the same site. GitHub Pages serves the viewer instead of this README.
+`index.html` redirects the same tab to the current PDF for native browser viewing and printing, without forcing a download. It is generated from `preview/public.html`; edit that template for public viewer changes. The PDF uses a relative URL so it opens from the same site. GitHub Pages serves the redirect instead of this README. Publishing regenerates it even when the PDF itself has not changed.
 
 The date is Pacific calendar time. `vN` is the Nth resume PDF published **that day** (first of the day is `v1`). Docs-only publishes do not bump `vN`.
