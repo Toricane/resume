@@ -43,6 +43,7 @@ $projectFiles = @(
   "preview/public.html",
   "README.md",
   "EDITING.md",
+  "cover-letter-template.md",
   "AGENTS.md",
   "watch.ps1",
   "publish.ps1",
