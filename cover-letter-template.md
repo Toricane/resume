@@ -2,12 +2,12 @@
 
 Use this structure for a tailored, one-page letter. Aim for roughly 350–450 words, with three short evidence paragraphs introduced by bold phrases. Replace every bracketed prompt and remove these instructions before submitting.
 
+Match the reference's simple business-letter layout: left-align everything; start with the date immediately followed by the employer on the next line; leave a blank line before the bold subject, salutation, and each paragraph. Do not add a personal contact header, recipient name block, or street address. Keep each bold evidence lead-in inline with its paragraph, not on a separate heading line. Put the linked email in the closing paragraph, then end with “Sincerely,” and the applicant's name on consecutive lines. When exporting, use a readable sans-serif font (such as Arial, 11 pt), single line spacing, and consistent paragraph spacing; keep the complete letter on one page.
+
 ## Letter
 
 [Month Day, Year]  
-[Employer]  
-[Street address, if supplied]  
-[City, Province Postal Code, if supplied]
+[Employer]
 
 **RE: [Exact position title] — [Employer requisition ID; include UBC posting ID if useful]**
 
@@ -47,6 +47,7 @@ Prajwal Prashanth
 ## Final review
 
 - Confirm the employer, role, recipient, requisition ID, date, and availability in the opening, subject, and closing. Search for names left over from another application.
+- Match the reference layout: date and employer only at the top, bold RE line, three inline bold evidence lead-ins, email in the closing, and a two-line sign-off. Do not include the template's headings or drafting notes in a finished letter.
 - Use the employer's requisition ID accurately; label a separate university identifier “UBC posting ID.” Omit the personal UBC student number unless requested.
 - Prefer concrete decisions and outcomes to lists of technologies or personality traits. Tailor all three evidence paragraphs to this posting.
 - Check eligibility requirements separately, including degree level and work-term duration. Do not write around a mismatch by implying qualifications you do not have.

@@ -22,7 +22,7 @@
 - [prajwal028@outlook.com](mailto:prajwal028@outlook.com)
 - [+1 (236) 979-1450](tel:+12369791450)
 - [linkedin.com/in/prajwal-prashanth](https://linkedin.com/in/prajwal-prashanth)
-- [prajwal.is-a.dev](https://prajwal.is-a.dev)
+- [prajwal.is-a.dev](https://prajwal.is-a.dev/?utm_source=resume)
 - [github.com/Toricane](https://github.com/Toricane)
 
 ## Education
