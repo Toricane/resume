@@ -39,7 +39,7 @@ Sep 2025 -- Apr 2026
 
 ## Experience
 
-### [Co-founder & Full-Stack Developer](https://prajwal.is-a.dev/projects/buildplate)
+### [Co-founder & Full-Stack Developer](https://prajwal.is-a.dev/projects/buildplate?utm_source=resume)
 *Buildplate* | Greater Vancouver, BC (Remote)
 Jun 2026 -- Aug 2026
 `Next.js, TypeScript, Supabase, PostgreSQL, Vercel`
@@ -48,7 +48,7 @@ Jun 2026 -- Aug 2026
 - Built authentication, an autosaving project editor, media uploads, and a filterable talent directory with profile previews.
 - Redesigned onboarding for a waitlist of about 200 people with searchable fields, fewer required inputs, and a finish-later option to address sign-up drop-off; users could create content before completing profiles and reported faster sign-up in informal feedback.
 
-### [Founding Full-Stack Engineer](https://prajwal.is-a.dev/projects/forgex-trading)
+### [Founding Full-Stack Engineer](https://prajwal.is-a.dev/projects/forgex-trading?utm_source=resume)
 *ForgeX Trading* | Greater Vancouver, BC
 May 2026 -- Aug 2026
 `Python, FastAPI, React, QuestDB, Docker`
@@ -58,7 +58,7 @@ May 2026 -- Aug 2026
 
 ## Projects
 
-### [cell-safe: Emergency Response Planning](https://prajwal.is-a.dev/projects/cell-safe)
+### [cell-safe: Emergency Response Planning](https://prajwal.is-a.dev/projects/cell-safe?utm_source=resume)
 *Data Intelligence for Smarter Communities Hackathon; Rogers, UBC & Databricks* | Vancouver, BC
 Sep 2026
 `Python, SQL, Spark, Databricks`
@@ -67,7 +67,7 @@ Sep 2026
 - Designed the database schema and Databricks pipeline to transform 8.06 million synthetic Waterfront cellular records into 437,760 minute-level active-session summaries, grouping 36 home origins into four regions for response planning.
 - Built analysis notebooks and an exploratory interface to inspect activity by time and home origin; co-developed the team's disaster-response scenario for transport and shelter planning.
 
-### [Vancouver AI Data Storytelling Hackathon](https://prajwal.is-a.dev/projects/vancouver-ai-data-storytelling)
+### [Vancouver AI Data Storytelling Hackathon](https://prajwal.is-a.dev/projects/vancouver-ai-data-storytelling?utm_source=resume)
 *BC + AI Ecosystem Association; Rival Technologies* | Vancouver, BC
 May 2025 -- Oct 2025
 `Python, API integration, scikit-learn, Plotly, Flask`
@@ -76,7 +76,7 @@ May 2025 -- Oct 2025
 - Built interactive 3D dashboards using embeddings, t-SNE, and K-Means to group opinions from surveys of 1,000+ respondents; extended the approach for the BC AI survey with generated roundtables, distinct voices, and synchronized transcripts.
 - Developed PlatoAI, a Flask application combining semantic retrieval and conversational context to generate Socratic dialogues grounded in 1,000+ music-survey responses, with clickable source citations.
 
-### [JARVIS for the Visually Impaired](https://prajwal.is-a.dev/projects/jarvis-for-the-visually-impaired)
+### [JARVIS for the Visually Impaired](https://prajwal.is-a.dev/projects/jarvis-for-the-visually-impaired?utm_source=resume)
 *The Knowledge Society (TKS)* | Vancouver, BC
 Jan 2024 -- Dec 2024
 `Python, C++, Raspberry Pi, Edge Impulse`
@@ -85,7 +85,7 @@ Jan 2024 -- Dec 2024
 - Implemented on-device wake-word detection and speech recording on a Seeed Studio XIAO ESP32S3 Sense using C++ and Edge Impulse while prototyping a smaller form factor.
 - Secured a $1,000 Regional Award grant from Ingenious+ to fund development; presented at four Vancouver AI Community Meetups, gathering feedback from local AI professionals.
 
-### [Google Internal Announcements MVP](https://prajwal.is-a.dev/projects/google-internal-announcements-rag-mvp)
+### [Google Internal Announcements MVP](https://prajwal.is-a.dev/projects/google-internal-announcements-rag-mvp?utm_source=resume)
 *The Knowledge Society (TKS)* | Vancouver, BC
 Dec 2023; presented Aug 2024
 `JavaScript, API integration`
