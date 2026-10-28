@@ -1,5 +1,7 @@
 # Cover letter template
 
+Save finished letters as Markdown in `cover-letters/<employer>-<role>.md`. Create Word or PDF exports only when explicitly requested.
+
 Use this structure for a tailored, one-page letter. Aim for roughly 350–450 words, with three short evidence paragraphs introduced by bold phrases. Replace every bracketed prompt and remove these instructions before submitting.
 
 Match the reference's simple business-letter layout: left-align everything; start with the date immediately followed by the employer on the next line; leave a blank line before the bold subject, salutation, and each paragraph. Do not add a personal contact header, recipient name block, or street address. Keep each bold evidence lead-in inline with its paragraph, not on a separate heading line. Put the linked email in the closing paragraph, then end with “Sincerely,” and the applicant's name on consecutive lines. When exporting, use a readable sans-serif font (such as Arial, 11 pt), single line spacing, and consistent paragraph spacing; keep the complete letter on one page.
@@ -51,5 +53,5 @@ Prajwal Prashanth
 - Use the employer's requisition ID accurately; label a separate university identifier “UBC posting ID.” Omit the personal UBC student number unless requested.
 - Prefer concrete decisions and outcomes to lists of technologies or personality traits. Tailor all three evidence paragraphs to this posting.
 - Check eligibility requirements separately, including degree level and work-term duration. Do not write around a mismatch by implying qualifications you do not have.
-- Export and inspect the complete PDF. Keep it one page with readable text, clear paragraph spacing, and footer clearance. Rephrase isolated final words or very short final lines instead of shrinking the font or adding filler.
+- When a PDF export is requested, inspect the complete PDF. Keep it one page with readable text, clear paragraph spacing, and footer clearance. Rephrase isolated final words or very short final lines instead of shrinking the font or adding filler.
 - Follow the posting's document and submission instructions, including the co-op footer where required.
