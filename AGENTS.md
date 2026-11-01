@@ -4,6 +4,14 @@ One-page résumé. Content lives in Markdown and is compiled to LaTeX. The PDF m
 
 Do not commit or run `.\publish.ps1` unless the user asks. Publish commits and pushes.
 
+## Write cover letters
+
+Follow [`cover-letter-template.md`](cover-letter-template.md) and save letters as `cover-letters/<employer>-<role>.md`. Create Word or PDF exports only when requested.
+
+Use the actual posting, current [`resume.md`](resume.md), and [Prajwal's website](https://prajwal.is-a.dev/) to choose evidence. The website supplies depth (implementation decisions, constraints, individual contributions, and outcomes) and breadth (relevant work omitted from the one-page résumé). Start with [`/llms.txt`](https://prajwal.is-a.dev/llms.txt) and [`/index.md`](https://prajwal.is-a.dev/index.md), then follow relevant or promising project pages. Use `/projects.md` or `/search-index.json` for broader discovery; project Markdown pages use `/projects/<slug>.md`.
+
+Tailor examples to the employer's actual problem rather than only restating résumé bullets. Reconcile sources, preserve project scope and outcome timing, and support every claim. If the website is inaccessible, disclose that limitation and proceed with available evidence. See the template's “Sources and accuracy” section for the full workflow.
+
 ## Edit the résumé
 
 Change [`resume.md`](resume.md) only, then sync:
